@@ -1,6 +1,6 @@
 # Video Compressor
 
-Pick a video, pick a size, get a video that fits. Video Compressor is a Windows desktop app that squeezes a video down to a target file size (like 8 MB for Discord or 25 MB for email) using two-pass H.264 encoding.
+Pick a video, pick a size, get a video that fits. Video Compressor is a Windows desktop app that squeezes a video down to a target file size (like 20 MB for Discord) using two-pass H.264 encoding.
 
 No FFmpeg install needed. It's bundled right in the app.
 
