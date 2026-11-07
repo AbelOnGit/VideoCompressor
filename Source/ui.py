@@ -182,6 +182,9 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
             subprocess.Popen([str(installer),"/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART",
                               "/DIR="+str(Path(sys.executable).resolve().parent)],
                              creationflags=flags,close_fds=True)
-            self.after(250,self.destroy)
+            self.after(250,self.close_for_update)
         except OSError:
             self.updater_status.configure(text="Update downloaded · Could not start the installer")
+    def close_for_update(self):
+        self.destroy()
+        os._exit(0)
