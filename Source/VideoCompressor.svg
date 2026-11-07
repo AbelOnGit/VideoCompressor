@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#172b50"/>
+      <stop offset="1" stop-color="#090f20"/>
+    </linearGradient>
+    <linearGradient id="frame" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4de1f2"/>
+      <stop offset="1" stop-color="#6685ff"/>
+    </linearGradient>
+    <linearGradient id="leftArrow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#25c9ea" stop-opacity=".45"/>
+      <stop offset="1" stop-color="#38e1f0"/>
+    </linearGradient>
+    <linearGradient id="rightArrow" x1="1" y1="0" x2="0" y2="0">
+      <stop offset="0" stop-color="#8b68ff" stop-opacity=".45"/>
+      <stop offset="1" stop-color="#8b68ff"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#020617" flood-opacity=".55"/>
+    </filter>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect x="22" y="22" width="468" height="468" rx="116" fill="url(#bg)"/>
+  <circle cx="256" cy="248" r="176" fill="#3478ff" opacity=".07"/>
+  <g filter="url(#shadow)">
+    <path d="M48 242h45v-19l28 33-28 33v-19H48z" fill="url(#leftArrow)"/>
+    <path d="M464 242h-45v-19l-28 33 28 33v-19h45z" fill="url(#rightArrow)"/>
+    <rect x="104" y="132" width="304" height="248" rx="36" fill="#112448" stroke="url(#frame)" stroke-width="10"/>
+    <rect x="153" y="174" width="206" height="164" rx="20" fill="#0a1429" stroke="#2d4e7e" stroke-width="4"/>
+    <g fill="#7b9ac1" opacity=".9">
+      <rect x="120" y="178" width="14" height="28" rx="6"/>
+      <rect x="120" y="242" width="14" height="28" rx="6"/>
+      <rect x="120" y="306" width="14" height="28" rx="6"/>
+      <rect x="378" y="178" width="14" height="28" rx="6"/>
+      <rect x="378" y="242" width="14" height="28" rx="6"/>
+      <rect x="378" y="306" width="14" height="28" rx="6"/>
+    </g>
+    <path d="M226 211c0-8 9-13 16-9l82 48c7 4 7 14 0 18l-82 48c-7 4-16-1-16-9z" fill="#e9fbff" filter="url(#glow)"/>
+  </g>
+</svg>

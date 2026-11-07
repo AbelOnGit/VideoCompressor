@@ -1,0 +1,10 @@
+# Build outputs and per-user video data
+/VideoCompressor.exe
+/VideoCompressorSetup.exe
+/Outputs/*
+!/Outputs/.gitkeep
+/Source/bin/
+/Source/build/
+/Source/__pycache__/
+/Source/*.spec
+*.log
