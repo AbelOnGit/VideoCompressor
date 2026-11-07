@@ -16,6 +16,8 @@ No FFmpeg install needed. It's bundled right in the app.
 - **Run logs.** Every run writes a `.log` next to the output showing what it did and why (resolution, frame rate, audio, each attempt, final size).
 - **Already small enough?** If your video is already under the target, the app asks whether to just copy it or re-encode anyway.
 - **Remembers your target size** between launches.
+- **Choose where files go.** Pick an output folder; compressed videos and their run logs are saved there. Your choice is remembered.
+- **Automatic updates.** Installed copies check GitHub for new stable releases on launch, verify the installer digest, and install updates over the current copy.
 
 ## Download
 
@@ -23,6 +25,8 @@ No FFmpeg install needed. It's bundled right in the app.
 2. Download `VideoCompressorSetup.exe` and run it.
 
 The installer is per-user, so it doesn't need admin rights. It adds a Start Menu shortcut, and you can optionally add a desktop shortcut during setup.
+
+After installing, the app checks for newer stable releases when it starts and installs verified updates automatically. The portable executable can still be downloaded and run without installing.
 
 > The installer isn't code-signed yet, so Windows SmartScreen may warn you. Click **More info**, then **Run anyway**.
 
@@ -108,5 +112,6 @@ VideoCompressor/
 ## Notes
 
 - Windows only for now.
+- Automatic updates require an internet connection and use the SHA-256 digest published with each GitHub release.
 - Hitting a size target is a bitrate estimate, so the result usually lands a little under what you asked for, not exactly on it.
 - Very tight targets on long videos will look rough. That's physics, not a bug.

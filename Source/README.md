@@ -1,6 +1,6 @@
-# Video Compressor
+# Video Compressor 1.1.0
 
-A Windows desktop app that targets an output size using two-pass H.264 encoding. FFmpeg and ffprobe are bundled; users do not need to install them.
+A Windows desktop app that targets an output size using two-pass H.264 encoding. Choose a custom output folder and the app remembers it between launches. Installed copies check GitHub for stable updates on startup and install verified releases over the current version. FFmpeg and ffprobe are bundled; users do not need to install them.
 
 ## Build
 

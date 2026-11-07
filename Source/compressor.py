@@ -19,16 +19,17 @@ def app_root() -> Path:
     return Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
 
 
-def output_directory() -> Path:
-    folder = app_root() / "Outputs"
+def output_directory(custom_path: str | Path | None = None) -> Path:
+    folder = Path(custom_path).expanduser() if custom_path else app_root() / "Outputs"
     folder.mkdir(parents=True, exist_ok=True)
     return folder
 
 
-def next_output_path(source: str, extension: str = ".mp4") -> Path:
+def next_output_path(source: str, extension: str = ".mp4",
+                     custom_output_dir: str | Path | None = None) -> Path:
     """Return an unused output path and reserve its matching log name logically."""
     src = Path(source)
-    folder = output_directory()
+    folder = output_directory(custom_output_dir)
     stem = f"{src.stem} Compressed"
     number = 1
     while True:
@@ -58,12 +59,13 @@ def format_fps(fps: float) -> str:
 
 def write_run_log(source: str, target_mb: float, result: dict | None,
                   output_path: str | None = None, meta: dict | None = None,
-                  steps: list[str] | None = None, started: datetime | None = None) -> str:
-    folder = output_directory()
+                  steps: list[str] | None = None, started: datetime | None = None,
+                  custom_output_dir: str | Path | None = None) -> str:
+    folder = output_directory(custom_output_dir)
     if output_path:
         path = Path(output_path).with_suffix(".log")
     else:
-        path = next_output_path(source, ".mp4").with_suffix(".log")
+        path = next_output_path(source, ".mp4", custom_output_dir).with_suffix(".log")
 
     local_time = (started or datetime.now().astimezone()).astimezone()
     hour = local_time.hour % 12 or 12
@@ -155,8 +157,11 @@ def probe(path: str) -> dict:
 
 
 class CompressionJob:
-    def __init__(self, source: str, target_mb: float, on_progress: Callable, on_status: Callable, on_done: Callable):
+    def __init__(self, source: str, target_mb: float, on_progress: Callable,
+                 on_status: Callable, on_done: Callable,
+                 custom_output_dir: str | Path | None = None):
         self.source, self.target_mb = source, target_mb
+        self.custom_output_dir = custom_output_dir
         self.on_progress, self.on_status, self.on_done = on_progress, on_status, on_done
         self.cancel_event = threading.Event()
         self.process: subprocess.Popen | None = None
@@ -181,7 +186,7 @@ class CompressionJob:
             self.meta = probe(self.source)
             target_bytes = int(self.target_mb * 1024 * 1024)
             source_size = os.path.getsize(self.source)
-            self.output_path = str(next_output_path(self.source, ".mp4"))
+            self.output_path = str(next_output_path(self.source, ".mp4", self.custom_output_dir))
             if source_size < target_bytes:
                 self.steps.append("The source is already smaller than the target; encoding anyway as requested.")
 
@@ -238,7 +243,9 @@ class CompressionJob:
                 import shutil
                 shutil.rmtree(self.temp_dir, ignore_errors=True)
             try:
-                result["log_path"] = write_run_log(self.source, self.target_mb, result, self.output_path, self.meta, self.steps, self.started)
+                result["log_path"] = write_run_log(
+                    self.source, self.target_mb, result, self.output_path,
+                    self.meta, self.steps, self.started, self.custom_output_dir)
             except OSError:
                 pass
             self.on_done(result)
