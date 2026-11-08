@@ -1,5 +1,5 @@
 from __future__ import annotations
-import json, os, queue, shutil, subprocess, sys, threading, webbrowser
+import json, os, queue, shutil, subprocess, sys, threading, time, webbrowser
 from pathlib import Path
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
@@ -7,6 +7,7 @@ from tkinterdnd2 import DND_FILES, TkinterDnD
 from compressor import CompressionJob, next_output_path, output_directory, probe, write_run_log
 from updater import (check_for_update, cleanup_obsolete_updates,
                      cleanup_previous_executables, download_update)
+from tools import ensure_tools, tools_are_ready
 from version import APP_VERSION
 
 APPDATA = Path(os.environ.get("APPDATA", Path.home())) / "VideoCompressor"
@@ -35,6 +36,8 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
         self.update_events=queue.Queue(); self.update_release=None; self.update_window=None
         self.update_progress_bar=None; self.update_status_label=None; self.restart_button=None
         self.installed_update_version=None
+        self.tools_ready=tools_are_ready(); self.tools_window=None
+        self.tools_progress_bar=None; self.tools_status_label=None
         if self._is_installed_copy():
             cleanup_obsolete_updates(APP_VERSION)
             cleanup_previous_executables(Path(sys.executable).resolve().parent)
@@ -78,8 +81,11 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
                                          font=ctk.CTkFont(size=10),text_color="gray60")
         self.updater_status.grid(row=11,column=0,pady=(0,8))
         if self.target.get()=="Custom": self.target_changed("Custom")
-        self.after(2500,self.check_updates)
         self.after(100,self.process_update_events)
+        if self.tools_ready:
+            self.after(2500,self.check_updates)
+        else:
+            self.after(250,self.start_tools_download)
 
     def _is_installed_copy(self):
         installed_dir=Path(os.environ.get("LOCALAPPDATA", Path.home())) / "Programs" / "VideoCompressor"
@@ -108,13 +114,22 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
         self.output_folder_value.set(str(self.active_output_dir)); self.output_entry.xview_moveto(1)
         self.default_button.configure(state="disabled"); self.save_preferences()
     def pick(self):
+        if not self.tools_ready:
+            self.status.configure(text="Downloading the video tools needed to open videos...")
+            return
         p=filedialog.askopenfilename(filetypes=[("Video files","*.mp4 *.mov *.mkv *.avi *.webm *.flv *.wmv *.m4v *.ts"),("All files","*.*")])
         if p:self.load_file(p)
     def dropped(self,event):
+        if not self.tools_ready:
+            self.status.configure(text="Downloading the video tools needed to open videos...")
+            return
         try: paths=self.tk.splitlist(event.data)
         except Exception: paths=[event.data.strip("{}")]
         if paths:self.load_file(paths[0])
     def load_file(self,p):
+        if not self.tools_ready:
+            self.status.configure(text="Downloading the video tools needed to open videos...")
+            return
         if Path(p).suffix.lower() not in FORMATS: messagebox.showerror("Unsupported file","Choose a supported video file."); return
         self.status.configure(text="Reading video details…"); self.update_idletasks()
         try: meta=probe(p)
@@ -123,6 +138,9 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
         self.info.configure(text=f"{Path(p).name}\n{os.path.getsize(p)/1_000_000:.2f} MB  ·  {meta['duration']/60:.2f} min  ·  {meta['width']} × {meta['height']}")
         self.compress.configure(state="normal"); self.status.configure(text="Ready"); self.result.configure(text="")
     def start(self):
+        if not self.tools_ready:
+            self.status.configure(text="Video tools are still downloading...")
+            return
         if not self.path:return
         try:self.active_output_dir=output_directory(self.custom_output_dir)
         except OSError as e:messagebox.showerror("Output folder unavailable",f"Could not create or access the output folder.\n\n{e}"); return
@@ -182,15 +200,102 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
                 event,value=self.update_events.get_nowait()
                 if event=="available": self.show_update_available(value)
                 elif event=="up_to_date": self.updater_status.configure(text=f"Video Compressor v{APP_VERSION} · Up to date")
-                elif event=="check_error": self.updater_status.configure(text=f"Video Compressor v{APP_VERSION} · Update check unavailable")
+                elif event=="check_error":
+                    self.updater_status.configure(text=f"Video Compressor v{APP_VERSION} · Update check unavailable")
+                    self.show_update_error(f"The app could not check GitHub for updates.\n\n{value}")
                 elif event=="download_progress": self.set_download_progress(value[0],value[1])
                 elif event=="update_status": self.set_update_status(value)
+                elif event=="update_bootstrap_status": self.set_bootstrap_progress(value[0],value[1])
                 elif event=="installed": self.show_update_installed(value)
                 elif event=="update_error": self.show_update_error(value)
+                elif event=="tools_progress": self.set_tools_progress(value[0],value[1])
+                elif event=="tools_status": self.set_tools_status(value)
+                elif event=="tools_ready": self.finish_tools_download()
+                elif event=="tools_error": self.show_tools_error(value)
         except queue.Empty:
             pass
         if self.winfo_exists():
             self.after(100,self.process_update_events)
+
+    def start_tools_download(self):
+        if self.tools_ready or (self.tools_window is not None and self.tools_window.winfo_exists()):
+            return
+        self.tools_window=ctk.CTkToplevel(self)
+        self.tools_window.title("Preparing Video Compressor")
+        self.tools_window.geometry("500x230")
+        self.tools_window.resizable(False,False)
+        self.tools_window.transient(self)
+        self.tools_window.protocol("WM_DELETE_WINDOW",lambda:None)
+        self.tools_window.grab_set()
+        content=ctk.CTkFrame(self.tools_window,fg_color="transparent")
+        content.pack(fill="both",expand=True,padx=28,pady=24)
+        ctk.CTkLabel(content,text="Preparing Video Compressor",font=ctk.CTkFont(size=22,weight="bold")).pack(anchor="w",pady=(4,18))
+        self.tools_status_label=ctk.CTkLabel(content,text="Downloading video tools... 0%",anchor="w",font=ctk.CTkFont(size=13))
+        self.tools_status_label.pack(fill="x",pady=(0,12))
+        self.tools_progress_bar=ctk.CTkProgressBar(content,height=14)
+        self.tools_progress_bar.set(0); self.tools_progress_bar.pack(fill="x")
+        ctk.CTkLabel(content,text="This one-time download is saved for future launches.",font=ctk.CTkFont(size=11),
+                     text_color="gray70").pack(anchor="w",pady=(12,0))
+        self.updater_status.configure(text="Downloading video tools from GitHub...")
+        threading.Thread(target=self._download_tools_worker,daemon=True).start()
+
+    def _download_tools_worker(self):
+        try:
+            ensure_tools(
+                on_progress=lambda received,total:self.update_events.put(("tools_progress",(received,total))),
+                on_status=lambda status:self.update_events.put(("tools_status",status)),
+            )
+            self.update_events.put(("tools_ready",None))
+        except Exception as e:
+            self.update_events.put(("tools_error",str(e)))
+
+    def set_tools_progress(self,received,total):
+        if self.tools_progress_bar is None:return
+        fraction=min(1.0,received/max(total,1))
+        self.tools_progress_bar.set(fraction)
+        self.tools_status_label.configure(text=f"Downloading video tools... {fraction*100:.0f}%")
+
+    def set_tools_status(self,status):
+        if self.tools_status_label is not None:
+            self.tools_status_label.configure(text=status)
+        self.updater_status.configure(text=status)
+
+    def finish_tools_download(self):
+        self.tools_ready=True
+        if self.tools_window is not None:
+            try:self.tools_window.destroy()
+            except Exception:pass
+            self.tools_window=None
+        self.tools_status_label=None; self.tools_progress_bar=None
+        self.status.configure(text="Ready")
+        self.updater_status.configure(text=f"Video Compressor v{APP_VERSION} · Video tools ready")
+        self.after(2500,self.check_updates)
+
+    def show_tools_error(self,message):
+        if self.tools_window is not None:
+            try:self.tools_window.destroy()
+            except Exception:pass
+            self.tools_window=None
+        self.tools_status_label=None; self.tools_progress_bar=None
+        content=self._new_update_window("Video tools unavailable","520x320")
+        ctk.CTkLabel(content,text="Video tools could not be downloaded",font=ctk.CTkFont(size=21,weight="bold"),
+                     text_color="#f87171").pack(anchor="w",pady=(4,12))
+        ctk.CTkLabel(content,text=f"Video Compressor needs ffmpeg.exe and ffprobe.exe to process videos.\n\n{message}",
+                     justify="left",wraplength=450,font=ctk.CTkFont(size=12)).pack(anchor="w",fill="both",expand=True)
+        buttons=ctk.CTkFrame(content,fg_color="transparent")
+        buttons.pack(side="bottom",fill="x",pady=(18,0))
+        ctk.CTkButton(buttons,text="Close",width=90,fg_color="transparent",border_width=1,
+                      command=self.ignore_update).pack(side="right",padx=(8,0))
+        ctk.CTkButton(buttons,text="Retry",width=90,command=self.retry_tools_download).pack(side="right",padx=(8,0))
+        ctk.CTkButton(buttons,text="Open GitHub Releases",width=170,
+                      command=lambda:self.open_releases(self.update_window)).pack(side="right")
+
+    def retry_tools_download(self):
+        if self.update_window is not None:
+            try:self.update_window.destroy()
+            except Exception:pass
+            self.update_window=None
+        self.start_tools_download()
 
     def _new_update_window(self,title,geometry):
         if self.update_window is not None:
@@ -259,6 +364,12 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
         if status=="Installing update..." and self.update_progress_bar is not None:
             self.update_progress_bar.set(1)
 
+    def set_bootstrap_progress(self,status,percent):
+        if self.update_status_label is None:return
+        self.update_status_label.configure(text=(f"{status} {percent}%" if status.startswith("Downloading") else status))
+        if self.update_progress_bar is not None:
+            self.update_progress_bar.set(max(0,min(100,percent))/100)
+
     @staticmethod
     def _clean_child_environment():
         environment=os.environ.copy()
@@ -277,7 +388,7 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
                 on_progress=lambda downloaded,total:self.update_events.put(("download_progress",(downloaded,total))),
                 on_status=lambda status:self.update_events.put(("update_status",status)),
             )
-            self.update_events.put(("update_status","Installing update..."))
+            self.update_events.put(("update_status","Starting online installer..."))
             app_exe=Path(sys.executable).resolve()
             old_exe=app_exe.with_name(f"VideoCompressor.old-{os.getpid()}.exe")
             if old_exe.exists():
@@ -291,13 +402,29 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
                    |getattr(subprocess,"CREATE_NEW_PROCESS_GROUP",0x00000200)
                    |getattr(subprocess,"CREATE_BREAKAWAY_FROM_JOB",0x01000000))
             install_dir=app_exe.parent
+            progress_path=Path(os.environ.get("LOCALAPPDATA",Path.home())) / "VideoCompressor" / "online-installer-progress.json"
+            try:progress_path.unlink(missing_ok=True)
+            except OSError:pass
             process=subprocess.Popen(
                 [str(installer),"/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART",
                  f"/DIR={install_dir}",f'/LOG="{log_path}"'],
                 cwd=str(installer.parent),env=self._clean_child_environment(),
                 creationflags=flags,close_fds=True,
             )
+            last_progress=None
+            while process.poll() is None:
+                try:
+                    progress=json.loads(progress_path.read_text(encoding="utf-8"))
+                    state=(str(progress.get("stage","Installing update...")),int(progress.get("percent",0)))
+                    if state!=last_progress:
+                        self.update_events.put(("update_bootstrap_status",state))
+                        last_progress=state
+                except (OSError,ValueError,TypeError):
+                    pass
+                time.sleep(0.2)
             exit_code=process.wait()
+            try:progress_path.unlink(missing_ok=True)
+            except OSError:pass
             log_text=log_path.read_text(encoding="utf-8",errors="replace") if log_path.exists() else ""
             if exit_code!=0 or "Installation process succeeded." not in log_text or not app_exe.is_file():
                 detail=f"Installer exit code: {exit_code}. Log: {log_path}"

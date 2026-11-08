@@ -2,7 +2,7 @@
 
 Pick a video, pick a size, get a video that fits. Video Compressor is a Windows desktop app that squeezes a video down to a target file size (like 20 MB for Discord) using two-pass H.264 encoding.
 
-No FFmpeg install needed. It's bundled right in the app.
+FFmpeg is downloaded from the project’s GitHub release the first time the app opens, then cached on the PC for future launches.
 
 ## Features
 
@@ -20,15 +20,16 @@ No FFmpeg install needed. It's bundled right in the app.
 - **Choose where files go.** Pick an output folder; compressed videos and their run logs are saved there. Your choice is remembered.
 - **Automatic updates.** Installed copies check GitHub for stable releases, verify installer size and SHA-256, show download/install progress, and let you restart now or later.
 - **Update controls.** Review the current and new versions, see download progress, and choose when to restart after installation.
+- **Small online setup.** `VideoCompressorSetup.exe` downloads and verifies the full installer from GitHub. The app separately downloads and verifies its FFmpeg tools on first launch.
 
 ## Download
 
 1. Go to the [Releases](../../releases) page.
-2. Download `VideoCompressorSetup.exe` and run it.
+2. Download the small `VideoCompressorSetup.exe` online installer and run it. It downloads the full installer from GitHub.
 
 The installer is per-user, so it doesn't need admin rights. It adds a Start Menu shortcut, and you can optionally add a desktop shortcut during setup.
 
-After installing, the app checks for newer stable releases when it starts and installs verified updates automatically. The portable executable can still be downloaded and run without installing.
+After installing, the app checks for newer stable releases when it starts and installs verified updates automatically. On first launch, it downloads the FFmpeg tools archive from GitHub and stores it under `%LOCALAPPDATA%\VideoCompressor\tools` for later runs. The portable executable can also download and cache those tools.
 
 > The installer isn't code-signed yet, so Windows SmartScreen may warn you. Click **More info**, then **Run anyway**.
 
@@ -72,10 +73,12 @@ The script will:
 
 1. Install the Python dependencies from `requirements.txt`.
 2. Download the Gyan.dev FFmpeg essentials build if `Source\bin` doesn't have the binaries yet.
-3. Package everything into a single `VideoCompressor.exe` with PyInstaller.
-4. Build `VideoCompressorSetup.exe` with Inno Setup.
+3. Package the application without embedding FFmpeg into `VideoCompressor.exe`.
+4. Build `VideoCompressorTools.zip` as a separately downloadable FFmpeg bundle.
+5. Build `VideoCompressorInstallerPayload.exe` with Inno Setup.
+6. Build the small `VideoCompressorSetup.exe` online bootstrapper.
 
-Both files end up in the repository root.
+All four release artifacts end up in the repository root. Upload the setup bootstrapper, installer payload, tools archive, and portable executable to the same GitHub release.
 
 To run it straight from source without building:
 
@@ -85,7 +88,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
-You'll need `ffmpeg.exe` and `ffprobe.exe` in `Source\bin` for that. Running `download_ffmpeg.ps1` will fetch them.
+You'll need `ffmpeg.exe` and `ffprobe.exe` in `Source\bin` to build or run from source. Running `download_ffmpeg.ps1` will fetch them.
 
 ## Project layout
 
@@ -108,7 +111,7 @@ VideoCompressor/
 - [Python](https://www.python.org/)
 - [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) for the UI
 - [tkinterdnd2](https://github.com/Eliav2/tkinterdnd2) for drag and drop
-- [FFmpeg](https://ffmpeg.org/) (Gyan.dev Windows essentials build) for encoding
+- [FFmpeg](https://ffmpeg.org/) (Gyan.dev Windows essentials build) for encoding; installed apps fetch it from the project release on first use
 - [PyInstaller](https://pyinstaller.org/) and [Inno Setup](https://jrsoftware.org/isinfo.php) for packaging
 
 ## Notes

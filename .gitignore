@@ -1,6 +1,8 @@
 # Build outputs and per-user video data
 /VideoCompressor.exe
 /VideoCompressorSetup.exe
+/VideoCompressorInstallerPayload.exe
+/VideoCompressorTools.zip
 /Outputs/*
 !/Outputs/.gitkeep
 /Source/bin/

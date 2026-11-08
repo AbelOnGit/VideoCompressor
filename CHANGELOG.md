@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.0
+
+- Replaced the roughly 100 MB setup download with a small online bootstrapper that downloads and SHA-256 verifies the full installer payload from GitHub.
+- Removed FFmpeg binaries from the app executable. On first launch, the app downloads and verifies a separate tools archive, extracts it into `%LOCALAPPDATA%\VideoCompressor\tools`, and reuses it on later launches.
+- Added progress and error dialogs for first-run tools setup.
+
 ## 1.3.0
 
 - Added a modal update prompt with current/new version details and Ignore/Update actions.
