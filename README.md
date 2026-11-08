@@ -18,7 +18,8 @@ No FFmpeg install needed. It's bundled right in the app.
 - **Already small enough?** If your video is already under the target, the app asks whether to just copy it or re-encode anyway.
 - **Remembers your target size** between launches.
 - **Choose where files go.** Pick an output folder; compressed videos and their run logs are saved there. Your choice is remembered.
-- **Automatic updates.** Installed copies check GitHub for new stable releases on launch, verify the installer digest, and install updates over the current copy.
+- **Automatic updates.** Installed copies check GitHub for stable releases, verify installer size and SHA-256, show download/install progress, and let you restart now or later.
+- **Update controls.** Review the current and new versions, see download progress, and choose when to restart after installation.
 
 ## Download
 

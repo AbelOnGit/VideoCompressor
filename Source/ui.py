@@ -1,11 +1,12 @@
 from __future__ import annotations
-import json, os, subprocess, sys, threading, webbrowser
+import json, os, queue, shutil, subprocess, sys, threading, webbrowser
 from pathlib import Path
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from tkinterdnd2 import DND_FILES, TkinterDnD
 from compressor import CompressionJob, next_output_path, output_directory, probe, write_run_log
-from updater import check_for_update, download_update
+from updater import (check_for_update, cleanup_obsolete_updates,
+                     cleanup_previous_executables, download_update)
 from version import APP_VERSION
 
 APPDATA = Path(os.environ.get("APPDATA", Path.home())) / "VideoCompressor"
@@ -30,7 +31,13 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
         saved_output = saved.get("output_folder")
         self.custom_output_dir = str(Path(saved_output).expanduser()) if saved_output and Path(saved_output).is_dir() else None
         self.active_output_dir = output_directory(self.custom_output_dir)
-        self.is_compressing = False; self.pending_installer = None
+        self.is_compressing = False
+        self.update_events=queue.Queue(); self.update_release=None; self.update_window=None
+        self.update_progress_bar=None; self.update_status_label=None; self.restart_button=None
+        self.installed_update_version=None
+        if self._is_installed_copy():
+            cleanup_obsolete_updates(APP_VERSION)
+            cleanup_previous_executables(Path(sys.executable).resolve().parent)
         self.grid_columnconfigure(0, weight=1); self.grid_rowconfigure(1, weight=1)
         ctk.CTkLabel(self, text="VIDEO COMPRESSOR", font=ctk.CTkFont(size=24, weight="bold")).grid(row=0,column=0,pady=(24,12))
         self.drop = ctk.CTkFrame(self, corner_radius=18, border_width=2, border_color="#3b82f6")
@@ -72,6 +79,12 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
         self.updater_status.grid(row=11,column=0,pady=(0,8))
         if self.target.get()=="Custom": self.target_changed("Custom")
         self.after(2500,self.check_updates)
+        self.after(100,self.process_update_events)
+
+    def _is_installed_copy(self):
+        installed_dir=Path(os.environ.get("LOCALAPPDATA", Path.home())) / "Programs" / "VideoCompressor"
+        return (getattr(sys,"frozen",False)
+                and Path(sys.executable).resolve().parent == installed_dir.resolve())
 
     def target_changed(self,value):
         if value=="Custom": self.custom.grid()
@@ -142,9 +155,7 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
         self.browse_button.configure(state="normal")
         self.default_button.configure(state="normal" if self.custom_output_dir else "disabled")
         self.compress.configure(state="normal" if self.path else "disabled"); self.cancel_btn.configure(state="disabled")
-        if self.pending_installer:
-            installer,self.pending_installer=self.pending_installer,None
-            self.launch_update(installer); return
+        self._enable_restart_if_ready()
         if r.get("cancelled"): self.status.configure(text="Cancelled"); self.progress.set(0); return
         if r.get("error"): self.status.configure(text="Error"); messagebox.showerror("Compression failed",r["error"]); return
         self.final_path=r["path"]; self.progress.set(1); self.percent.configure(text="100% · 0:00 remaining"); self.status.configure(text="Done")
@@ -156,53 +167,221 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
     def open(self):
         if self.final_path:os.startfile(self.final_path)
     def check_updates(self):
-        installed_dir=Path(os.environ.get("LOCALAPPDATA", Path.home())) / "Programs" / "VideoCompressor"
-        if not getattr(sys,"frozen",False) or Path(sys.executable).resolve().parent != installed_dir.resolve():return
+        if not self._is_installed_copy():return
         def worker():
             try:
                 release=check_for_update(APP_VERSION)
-                if release is None:
-                    self.after(0,lambda:self.updater_status.configure(text=f"Video Compressor v{APP_VERSION} · Up to date"))
-                    return
-                tag=release.get("tag_name","new release")
-                self.after(0,lambda:self.updater_status.configure(text=f"Downloading update {tag}…"))
-                installer=download_update(release)
-                self.after(0,lambda:self.launch_update(installer))
-            except Exception:
-                try:self.after(0,lambda:self.updater_status.configure(text=f"Video Compressor v{APP_VERSION} · Update check unavailable"))
-                except Exception:pass
+                self.update_events.put(("available" if release else "up_to_date", release))
+            except Exception as e:
+                self.update_events.put(("check_error",str(e)))
         threading.Thread(target=worker,daemon=True).start()
-    def launch_update(self,installer):
-        if self.is_compressing:
-            self.pending_installer=installer
-            self.updater_status.configure(text="Update ready · Will install after compression finishes")
-            return
+
+    def process_update_events(self):
         try:
-            flags=getattr(subprocess,"DETACHED_PROCESS",0x00000008)|getattr(subprocess,"CREATE_NO_WINDOW",0)
-            subprocess.Popen([str(installer),"/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART",
-                              "/DIR="+str(Path(sys.executable).resolve().parent)],
+            while True:
+                event,value=self.update_events.get_nowait()
+                if event=="available": self.show_update_available(value)
+                elif event=="up_to_date": self.updater_status.configure(text=f"Video Compressor v{APP_VERSION} · Up to date")
+                elif event=="check_error": self.updater_status.configure(text=f"Video Compressor v{APP_VERSION} · Update check unavailable")
+                elif event=="download_progress": self.set_download_progress(value[0],value[1])
+                elif event=="update_status": self.set_update_status(value)
+                elif event=="installed": self.show_update_installed(value)
+                elif event=="update_error": self.show_update_error(value)
+        except queue.Empty:
+            pass
+        if self.winfo_exists():
+            self.after(100,self.process_update_events)
+
+    def _new_update_window(self,title,geometry):
+        if self.update_window is not None:
+            try:self.update_window.destroy()
+            except Exception:pass
+        self.update_window=ctk.CTkToplevel(self)
+        self.update_window.title(title)
+        self.update_window.geometry(geometry)
+        self.update_window.resizable(False,False)
+        self.update_window.transient(self)
+        self.update_window.protocol("WM_DELETE_WINDOW",self.ignore_update)
+        self.update_window.grab_set()
+        content=ctk.CTkFrame(self.update_window,fg_color="transparent")
+        content.pack(fill="both",expand=True,padx=28,pady=24)
+        return content
+
+    def show_update_available(self,release):
+        if self.update_window is not None:
+            try:
+                if self.update_window.winfo_exists():return
+            except Exception:pass
+        self.update_release=release
+        new_version=str(release.get("tag_name","unknown")).removeprefix("v")
+        content=self._new_update_window("Update available","500x270")
+        ctk.CTkLabel(content,text="Update available",font=ctk.CTkFont(size=25,weight="bold")).pack(anchor="w",pady=(8,12))
+        ctk.CTkLabel(content,text=f"A newer version of Video Compressor is ready.\n\nCurrent version: {APP_VERSION}\nNew version: {new_version}",
+                     justify="left",font=ctk.CTkFont(size=15)).pack(anchor="w",fill="x")
+        buttons=ctk.CTkFrame(content,fg_color="transparent")
+        buttons.pack(side="bottom",fill="x",pady=(20,0))
+        ctk.CTkButton(buttons,text="Ignore",width=110,fg_color="transparent",border_width=1,
+                      command=self.ignore_update).pack(side="right",padx=(8,0))
+        ctk.CTkButton(buttons,text="Update",width=130,command=self.begin_update).pack(side="right")
+
+    def ignore_update(self):
+        if self.update_window is not None:
+            try:self.update_window.destroy()
+            except Exception:pass
+            self.update_window=None
+        if self.update_release:
+            version=self.update_release.get("tag_name","new version")
+            self.updater_status.configure(text=f"Video Compressor v{APP_VERSION} · Ignoring {version} until next launch")
+        self.update_release=None
+
+    def begin_update(self):
+        release=self.update_release
+        if not release:return
+        self.update_release=None
+        content=self._new_update_window("Updating Video Compressor","500x270")
+        ctk.CTkLabel(content,text="Updating Video Compressor",font=ctk.CTkFont(size=22,weight="bold")).pack(anchor="w",pady=(8,24))
+        self.update_status_label=ctk.CTkLabel(content,text="Downloading update... 0%",anchor="w",font=ctk.CTkFont(size=14))
+        self.update_status_label.pack(fill="x",pady=(0,12))
+        self.update_progress_bar=ctk.CTkProgressBar(content,height=14)
+        self.update_progress_bar.set(0); self.update_progress_bar.pack(fill="x")
+        self.updater_status.configure(text=f"Downloading update {release.get('tag_name','')}…")
+        threading.Thread(target=self.install_update_worker,args=(release,),daemon=True).start()
+
+    def set_download_progress(self,downloaded,total):
+        if self.update_status_label is None:return
+        fraction=min(1.0,downloaded/max(total,1))
+        self.update_progress_bar.set(fraction)
+        self.update_status_label.configure(text=f"Downloading update... {fraction*100:.0f}%")
+
+    def set_update_status(self,status):
+        if self.update_status_label is not None:
+            self.update_status_label.configure(text=status)
+        if status=="Installing update..." and self.update_progress_bar is not None:
+            self.update_progress_bar.set(1)
+
+    @staticmethod
+    def _clean_child_environment():
+        environment=os.environ.copy()
+        for name in list(environment):
+            upper=name.upper()
+            if (upper in {"_MEIPASS", "_MEIPASS2"}
+                    or upper.startswith("_PYI_")
+                    or upper.startswith("PYINSTALLER_")):
+                environment.pop(name,None)
+        return environment
+
+    def install_update_worker(self,release):
+        try:
+            installer=download_update(
+                release,
+                on_progress=lambda downloaded,total:self.update_events.put(("download_progress",(downloaded,total))),
+                on_status=lambda status:self.update_events.put(("update_status",status)),
+            )
+            self.update_events.put(("update_status","Installing update..."))
+            app_exe=Path(sys.executable).resolve()
+            old_exe=app_exe.with_name(f"VideoCompressor.old-{os.getpid()}.exe")
+            if old_exe.exists():
+                old_exe.unlink()
+            app_exe.rename(old_exe)
+
+            local_app_data=Path(os.environ.get("LOCALAPPDATA",Path.home())) / "VideoCompressor"
+            local_app_data.mkdir(parents=True,exist_ok=True)
+            log_path=local_app_data / "update-install.log"
+            flags=(getattr(subprocess,"DETACHED_PROCESS",0x00000008)
+                   |getattr(subprocess,"CREATE_NEW_PROCESS_GROUP",0x00000200)
+                   |getattr(subprocess,"CREATE_BREAKAWAY_FROM_JOB",0x01000000))
+            install_dir=app_exe.parent
+            process=subprocess.Popen(
+                [str(installer),"/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART",
+                 f"/DIR={install_dir}",f'/LOG="{log_path}"'],
+                cwd=str(installer.parent),env=self._clean_child_environment(),
+                creationflags=flags,close_fds=True,
+            )
+            exit_code=process.wait()
+            log_text=log_path.read_text(encoding="utf-8",errors="replace") if log_path.exists() else ""
+            if exit_code!=0 or "Installation process succeeded." not in log_text or not app_exe.is_file():
+                detail=f"Installer exit code: {exit_code}. Log: {log_path}"
+                if log_text:
+                    detail += "\n\n" + "\n".join(log_text.splitlines()[-12:])
+                raise RuntimeError(detail)
+
+            installed_version=str(release.get("tag_name","new version")).removeprefix("v")
+            shutil.rmtree(installer.parent,ignore_errors=True)
+            try:(installer.parent.parent).rmdir()
+            except OSError:pass
+            self.update_events.put(("installed",installed_version))
+        except Exception as e:
+            try:
+                app_exe=Path(sys.executable).resolve()
+                old_exe=app_exe.with_name(f"VideoCompressor.old-{os.getpid()}.exe")
+                if old_exe.exists() and not app_exe.exists():old_exe.rename(app_exe)
+            except OSError:pass
+            self.update_events.put(("update_error",str(e)))
+
+    def show_update_installed(self,version):
+        self.installed_update_version=version
+        self.updater_status.configure(text=f"Update installed · v{version} is ready")
+        content=self._new_update_window("Update installed","500x270")
+        ctk.CTkLabel(content,text="Update installed",font=ctk.CTkFont(size=25,weight="bold")).pack(anchor="w",pady=(8,12))
+        ctk.CTkLabel(content,text=f"Video Compressor v{version} is installed.",justify="left",
+                     font=ctk.CTkFont(size=15)).pack(anchor="w",fill="x")
+        self.restart_note=ctk.CTkLabel(content,text="Restart now to use the new version.",anchor="w",font=ctk.CTkFont(size=12))
+        self.restart_note.pack(anchor="w",pady=(18,0))
+        buttons=ctk.CTkFrame(content,fg_color="transparent")
+        buttons.pack(side="bottom",fill="x",pady=(16,0))
+        ctk.CTkButton(buttons,text="Restart later",width=130,fg_color="transparent",border_width=1,
+                      command=self.restart_later).pack(side="right",padx=(8,0))
+        self.restart_button=ctk.CTkButton(buttons,text="Restart now",width=130,command=self.restart_now)
+        self.restart_button.pack(side="right")
+        self._enable_restart_if_ready()
+
+    def _enable_restart_if_ready(self):
+        if self.installed_update_version and self.restart_button is not None:
+            if self.is_compressing:
+                self.restart_button.configure(state="disabled")
+                self.restart_note.configure(text="Restart is available when compression finishes.")
+            else:
+                self.restart_button.configure(state="normal")
+                self.restart_note.configure(text="Restart now to use the new version.")
+
+    def restart_later(self):
+        if self.update_window is not None:
+            try:self.update_window.destroy()
+            except Exception:pass
+        self.update_window=None; self.restart_button=None
+        self.updater_status.configure(text=f"Update v{self.installed_update_version} installed · Restart later to use it")
+
+    def restart_now(self):
+        if self.is_compressing:return
+        app_exe=Path(sys.executable).resolve().with_name("VideoCompressor.exe")
+        if not app_exe.is_file():
+            self.show_update_error(f"The new app executable was not found at:\n{app_exe}")
+            return
+        flags=(getattr(subprocess,"DETACHED_PROCESS",0x00000008)
+               |getattr(subprocess,"CREATE_NEW_PROCESS_GROUP",0x00000200)
+               |getattr(subprocess,"CREATE_BREAKAWAY_FROM_JOB",0x01000000))
+        try:
+            subprocess.Popen([str(app_exe)],cwd=str(app_exe.parent),env=self._clean_child_environment(),
                              creationflags=flags,close_fds=True)
-            self.after(250,self.close_for_update)
-        except OSError:
-            self.updater_status.configure(text="Update downloaded · Could not start the installer")
-            self.show_update_launch_error()
-    def close_for_update(self):
+        except OSError as e:
+            self.show_update_error(f"The update is installed, but the new app could not be started.\n\n{e}")
+            return
         self.destroy()
         os._exit(0)
-    def show_update_launch_error(self):
-        dialog=ctk.CTkToplevel(self)
-        dialog.title("Could not start update")
-        dialog.geometry("420x190")
-        dialog.resizable(False,False)
-        dialog.transient(self)
-        dialog.grab_set()
-        ctk.CTkLabel(dialog,text="The update was downloaded, but Windows could not start its installer.\n\nYou can download and install the latest version manually from GitHub.",
-                     justify="left",wraplength=370).pack(padx=24,pady=(24,16),fill="x")
-        buttons=ctk.CTkFrame(dialog,fg_color="transparent")
-        buttons.pack(padx=20,pady=(0,20),fill="x")
-        ctk.CTkButton(buttons,text="Open GitHub Releases",command=lambda:self.open_releases(dialog)).pack(side="right",padx=(8,0))
-        ctk.CTkButton(buttons,text="Close",fg_color="transparent",border_width=1,
-                      command=dialog.destroy).pack(side="right")
+
+    def show_update_error(self,message):
+        content=self._new_update_window("Update error","520x320")
+        ctk.CTkLabel(content,text="Update could not be completed",font=ctk.CTkFont(size=21,weight="bold"),
+                     text_color="#f87171").pack(anchor="w",pady=(4,12))
+        ctk.CTkLabel(content,text=message,justify="left",wraplength=450,
+                     font=ctk.CTkFont(size=12)).pack(anchor="w",fill="both",expand=True)
+        buttons=ctk.CTkFrame(content,fg_color="transparent")
+        buttons.pack(side="bottom",fill="x",pady=(18,0))
+        ctk.CTkButton(buttons,text="Close",width=100,fg_color="transparent",border_width=1,
+                      command=self.ignore_update).pack(side="right",padx=(8,0))
+        ctk.CTkButton(buttons,text="Open GitHub Releases",width=170,
+                      command=lambda:self.open_releases(self.update_window)).pack(side="right")
+
     @staticmethod
     def open_releases(dialog=None):
         webbrowser.open("https://github.com/AbelOnGit/VideoCompressor/releases")

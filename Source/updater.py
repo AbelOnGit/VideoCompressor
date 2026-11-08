@@ -5,9 +5,11 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import tempfile
 import urllib.request
 from pathlib import Path
+from typing import Callable
 
 RELEASE_API = "https://api.github.com/repos/AbelOnGit/VideoCompressor/releases/latest"
 ASSET_NAME = "VideoCompressorSetup.exe"
@@ -40,7 +42,8 @@ def check_for_update(current_version: str) -> dict | None:
     return release
 
 
-def download_update(release: dict) -> Path:
+def download_update(release: dict, on_progress: Callable[[int, int], None] | None = None,
+                   on_status: Callable[[str], None] | None = None) -> Path:
     """Download the official installer and require GitHub's published SHA-256."""
     tag = str(release.get("tag_name", ""))
     if _version_tuple(tag) is None:
@@ -70,7 +73,11 @@ def download_update(release: dict) -> Path:
     update_root.mkdir(parents=True, exist_ok=True)
     destination = update_root / ASSET_NAME
     if destination.is_file() and destination.stat().st_size == expected_size:
+        if on_status:
+            on_status("Verifying...")
         if _sha256(destination) == expected_hash:
+            if on_progress:
+                on_progress(expected_size, expected_size)
             return destination
 
     request = urllib.request.Request(url, headers={"User-Agent": "VideoCompressor-Updater"})
@@ -93,7 +100,11 @@ def download_update(release: dict) -> Path:
                         raise ValueError("The update download exceeded the allowed size.")
                     hasher.update(chunk)
                     output.write(chunk)
+                    if on_progress:
+                        on_progress(total, expected_size)
 
+        if on_status:
+            on_status("Verifying...")
         if total != expected_size:
             raise ValueError("The downloaded installer size did not match the release.")
         if hasher.hexdigest() != expected_hash:
@@ -112,3 +123,36 @@ def _sha256(path: Path) -> str:
         for chunk in iter(lambda: source.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def cleanup_obsolete_updates(current_version: str,
+                             update_root: Path | None = None) -> None:
+    """Remove cached release folders already installed by this app version."""
+    current = _version_tuple(current_version)
+    if current is None:
+        return
+    root = update_root or (Path(os.environ.get("LOCALAPPDATA", Path.home()))
+                           / "VideoCompressor" / "updates")
+    if not root.is_dir():
+        return
+    for child in root.iterdir():
+        if not child.is_dir():
+            continue
+        downloaded = _version_tuple(child.name)
+        if downloaded is not None and current >= downloaded:
+            shutil.rmtree(child, ignore_errors=True)
+    try:
+        root.rmdir()
+    except OSError:
+        pass
+
+
+def cleanup_previous_executables(install_dir: Path) -> None:
+    """Remove app images renamed by a completed update, if Windows permits."""
+    candidates = [install_dir / "VideoCompressor.old.exe"]
+    candidates.extend(install_dir.glob("VideoCompressor.old-*.exe"))
+    for old_exe in candidates:
+        try:
+            old_exe.unlink(missing_ok=True)
+        except OSError:
+            pass

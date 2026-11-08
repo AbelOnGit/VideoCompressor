@@ -1,6 +1,6 @@
-# Video Compressor 1.2.0
+# Video Compressor 1.3.0
 
-A Windows desktop app that targets an output size using two-pass H.264 encoding. Target sizes use decimal megabytes (1 MB = 1,000,000 bytes). Choose a custom output folder and the app remembers it between launches. Installed copies check GitHub for stable updates on startup and install verified releases over the current version. FFmpeg and ffprobe are bundled; users do not need to install them.
+A Windows desktop app that targets an output size using two-pass H.264 encoding. Target sizes use decimal megabytes (1 MB = 1,000,000 bytes). Choose a custom output folder and the app remembers it between launches. Installed copies check GitHub for stable updates on startup and show an in-app download, verification, and install flow with restart choices. FFmpeg and ffprobe are bundled; users do not need to install them.
 
 ## Build
 
