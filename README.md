@@ -24,12 +24,12 @@ For normal installation, download **only** [`VideoCompressorSetup.exe`](../../re
 - **Choose where files go.** Pick an output folder; compressed videos and their run logs are saved there. Your choice is remembered.
 - **Automatic updates.** Installed copies check GitHub for stable releases, verify installer size and SHA-256, show download/install progress, and let you restart now or later.
 - **Update controls.** Review the current and new versions, see download progress, and choose when to restart after installation.
-- **One setup download.** `VideoCompressorSetup.exe` includes everything needed to install and run the app.
+- **One setup download.** `VideoCompressorSetup.exe` downloads and verifies the complete installer for you.
 
 ## Download
 
 1. Go to the [Releases](../../releases) page.
-2. Download `VideoCompressorSetup.exe` and run it.
+2. Download the small `VideoCompressorSetup.exe` online installer and run it. It fetches the full installer securely from GitHub.
 
 The installer is per-user, so it doesn't need admin rights. It adds a Start Menu shortcut, and you can optionally add a desktop shortcut during setup.
 
@@ -80,7 +80,7 @@ The script will:
 3. Package the application and FFmpeg binaries into `VideoCompressor.exe`.
 4. Build `VideoCompressorSetup.exe` with Inno Setup.
 
-Both release artifacts end up in the repository root. Upload `VideoCompressorSetup.exe` and the portable executable to the GitHub release.
+The build creates the portable executable, `VideoCompressorSetup.exe`, and a full installer payload whose name begins `INTERNAL_DO_NOT_DOWNLOAD__`. Publish the payload with the other assets so Setup can fetch it, but users should download only `VideoCompressorSetup.exe` or the portable executable.
 
 To run it straight from source without building:
 

@@ -3,6 +3,7 @@
 /VideoCompressorSetup.exe
 /VideoCompressorInstallerPayload.exe
 /VideoCompressorTools.zip
+/INTERNAL_DO_NOT_DOWNLOAD__VideoCompressorInstallerPayload.exe
 /VideoCompresser-Portable.exe
 /.release-notes-v1.4.0.md
 /Outputs/*
