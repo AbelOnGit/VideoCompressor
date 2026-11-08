@@ -7,6 +7,7 @@ No FFmpeg install needed. It's bundled right in the app.
 ## Features
 
 - **Hit a target size.** Choose from 5, 8, 10, 15, 20, 25, 50, or 100 MB, or type in a custom size.
+- **Decimal megabytes.** Each MB is exactly 1,000,000 bytes, matching how file upload limits commonly specify MB.
 - **Drag and drop.** Drop a video on the window or click to browse. Supports MP4, MOV, MKV, AVI, WebM, FLV, WMV, M4V, and TS.
 - **Two-pass encoding.** Pass one analyzes the video, pass two spends the bitrate where it matters, so you get better quality at the same size than a single pass.
 - **Auto-retry.** If the result lands over your target, the app lowers the bitrate and tries again (up to 3 retries) instead of handing you a file that's too big.
@@ -43,7 +44,7 @@ Compressed videos and their logs go in the `Outputs` folder inside the install d
 ## How it works
 
 1. **Probe.** `ffprobe` reads the duration, resolution, frame rate, and audio track.
-2. **Budget.** The app works out the video bitrate that fits your target size, leaving about 4% headroom for container overhead and reserving 96 kbps for audio if there is any.
+2. **Budget.** The app converts each target MB to 1,000,000 bytes, then works out the video bitrate that fits your target size, leaving about 4% headroom for container overhead and reserving 96 kbps for audio if there is any.
 3. **Adjust for tight targets.** The lower the bitrate, the more it scales things down:
 
    | Video bitrate | What changes |

@@ -1,5 +1,5 @@
 from __future__ import annotations
-import json, os, subprocess, sys, threading
+import json, os, subprocess, sys, threading, webbrowser
 from pathlib import Path
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
@@ -40,7 +40,7 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
         self.drop_text.grid(row=0,column=0,sticky="nsew",pady=52); self.drop_text.bind("<Button-1>",lambda _:self.pick())
         self.info = ctk.CTkLabel(self,text="",justify="left",font=ctk.CTkFont(size=14)); self.info.grid(row=2,column=0,padx=28,pady=(8,4),sticky="w")
         controls=ctk.CTkFrame(self,fg_color="transparent"); controls.grid(row=3,column=0,padx=28,pady=(4,8),sticky="ew"); controls.grid_columnconfigure(1,weight=1)
-        ctk.CTkLabel(controls,text="Target size").grid(row=0,column=0,padx=(0,12))
+        ctk.CTkLabel(controls,text="Target size · decimal MB").grid(row=0,column=0,padx=(0,12))
         self.target=ctk.StringVar(value=initial if initial in ["5 MB","8 MB","10 MB","15 MB","20 MB","25 MB","50 MB","100 MB","Custom"] else "20 MB")
         self.menu=ctk.CTkOptionMenu(controls,values=["5 MB","8 MB","10 MB","15 MB","20 MB","25 MB","50 MB","100 MB","Custom"],variable=self.target,command=self.target_changed); self.menu.grid(row=0,column=1,sticky="w")
         self.custom=ctk.CTkEntry(controls,width=100,placeholder_text="MB"); self.custom.grid(row=0,column=2,padx=12); self.custom.grid_remove()
@@ -107,7 +107,7 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
         try: meta=probe(p)
         except Exception as e: self.status.configure(text="Error"); messagebox.showerror("Could not load video",str(e)); return
         self.path,self.meta=p,meta; self.drop_text.configure(text=Path(p).name)
-        self.info.configure(text=f"{Path(p).name}\n{os.path.getsize(p)/1048576:.2f} MB  ·  {meta['duration']/60:.2f} min  ·  {meta['width']} × {meta['height']}")
+        self.info.configure(text=f"{Path(p).name}\n{os.path.getsize(p)/1_000_000:.2f} MB  ·  {meta['duration']/60:.2f} min  ·  {meta['width']} × {meta['height']}")
         self.compress.configure(state="normal"); self.status.configure(text="Ready"); self.result.configure(text="")
     def start(self):
         if not self.path:return
@@ -116,7 +116,7 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
         try: mb=float(self.custom.get()) if self.target.get()=="Custom" else float(self.target.get().split()[0]); assert mb>0
         except Exception: messagebox.showerror("Invalid target","Enter a target size greater than zero MB."); return
         size=os.path.getsize(self.path)
-        if size < mb*1048576:
+        if size < mb*1_000_000:
             answer=messagebox.askyesnocancel("Already under target", "This video is already smaller than the target.\n\nYes: copy it as an MP4 output\nNo: re-encode anyway\nCancel: do nothing")
             if answer is None:return
             if answer:
@@ -126,7 +126,7 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
                                   ["Copied the source file without re-encoding because it was already below the target size."],
                                   custom_output_dir=self.active_output_dir)
                 except OSError: pass
-                self.final_path=out; self.result.configure(text=f"Done · {os.path.getsize(out)/1048576:.2f} MB"); self.open_folder.configure(state="normal"); self.open_file.configure(state="normal"); self.status.configure(text="Done"); return
+                self.final_path=out; self.result.configure(text=f"Done · {os.path.getsize(out)/1_000_000:.2f} MB"); self.open_folder.configure(state="normal"); self.open_file.configure(state="normal"); self.status.configure(text="Done"); return
         self.result.configure(text=""); self.open_folder.configure(state="disabled"); self.open_file.configure(state="disabled"); self.progress.set(0)
         self.compress.configure(state="disabled"); self.cancel_btn.configure(state="normal")
         self.is_compressing=True; self.browse_button.configure(state="disabled"); self.default_button.configure(state="disabled")
@@ -148,7 +148,7 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
         if r.get("cancelled"): self.status.configure(text="Cancelled"); self.progress.set(0); return
         if r.get("error"): self.status.configure(text="Error"); messagebox.showerror("Compression failed",r["error"]); return
         self.final_path=r["path"]; self.progress.set(1); self.percent.configure(text="100% · 0:00 remaining"); self.status.configure(text="Done")
-        self.result.configure(text=f"Final size: {r['size']/1048576:.2f} MB"); self.open_folder.configure(state="normal"); self.open_file.configure(state="normal")
+        self.result.configure(text=f"Final size: {r['size']/1_000_000:.2f} MB"); self.open_folder.configure(state="normal"); self.open_file.configure(state="normal")
     def cancel(self):
         if self.job:self.job.cancel(); self.status.configure(text="Cancelling…")
     def folder(self):
@@ -185,6 +185,26 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
             self.after(250,self.close_for_update)
         except OSError:
             self.updater_status.configure(text="Update downloaded · Could not start the installer")
+            self.show_update_launch_error()
     def close_for_update(self):
         self.destroy()
         os._exit(0)
+    def show_update_launch_error(self):
+        dialog=ctk.CTkToplevel(self)
+        dialog.title("Could not start update")
+        dialog.geometry("420x190")
+        dialog.resizable(False,False)
+        dialog.transient(self)
+        dialog.grab_set()
+        ctk.CTkLabel(dialog,text="The update was downloaded, but Windows could not start its installer.\n\nYou can download and install the latest version manually from GitHub.",
+                     justify="left",wraplength=370).pack(padx=24,pady=(24,16),fill="x")
+        buttons=ctk.CTkFrame(dialog,fg_color="transparent")
+        buttons.pack(padx=20,pady=(0,20),fill="x")
+        ctk.CTkButton(buttons,text="Open GitHub Releases",command=lambda:self.open_releases(dialog)).pack(side="right",padx=(8,0))
+        ctk.CTkButton(buttons,text="Close",fg_color="transparent",border_width=1,
+                      command=dialog.destroy).pack(side="right")
+    @staticmethod
+    def open_releases(dialog=None):
+        webbrowser.open("https://github.com/AbelOnGit/VideoCompressor/releases")
+        if dialog is not None:
+            dialog.destroy()

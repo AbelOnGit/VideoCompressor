@@ -1,5 +1,3 @@
-#define MyAppVersion "1.1.1"
-
 [Setup]
 AppId={{AC80A442-00CA-4F68-A157-C19BC21665AF}
 AppName=Video Compressor
@@ -14,7 +12,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayName=Video Compressor
 UninstallDisplayIcon={app}\VideoCompressor.exe
 SetupIconFile=VideoCompressor.ico
-VersionInfoVersion=1.1.1.0
+VersionInfoVersion=1.2.0.0
 OutputDir=..
 OutputBaseFilename=VideoCompressorSetup
 Compression=lzma2

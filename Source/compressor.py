@@ -77,7 +77,7 @@ def write_run_log(source: str, target_mb: float, result: dict | None,
         "VIDEO DETAILS",
         f"Source: {source}",
         f"Original size: {human_size(os.path.getsize(source)) if os.path.exists(source) else 'Unavailable'}",
-        f"Target size: {target_mb:g} megabytes",
+        f"Target size: {target_mb:g} decimal megabytes (1 MB = 1,000,000 bytes)",
     ]
     if meta:
         mins, secs = divmod(int(meta["duration"]), 60)
@@ -184,7 +184,7 @@ class CompressionJob:
         result = None
         try:
             self.meta = probe(self.source)
-            target_bytes = int(self.target_mb * 1024 * 1024)
+            target_bytes = int(self.target_mb * 1_000_000)
             source_size = os.path.getsize(self.source)
             self.output_path = str(next_output_path(self.source, ".mp4", self.custom_output_dir))
             if source_size < target_bytes:
