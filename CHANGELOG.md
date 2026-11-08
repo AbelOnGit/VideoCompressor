@@ -1,15 +1,10 @@
 # Changelog
 
-## 1.6.0
+## 1.4.1
 
-- Restored the small online setup. It downloads and SHA-256 verifies the full installer payload from GitHub.
+- Added the small online setup that downloads and verifies the full installer payload from GitHub.
 - Kept FFmpeg bundled in the portable app and installer payload, so no separate tools archive is needed.
-- Marked the release payload asset `INTERNAL_DO_NOT_DOWNLOAD__...` to tell users to download only Setup or Portable.
-
-## 1.5.0
-
-- The portable app and installer now include FFmpeg, so they work without downloading extra release assets or tools on first launch.
-- GitHub releases now need only `VideoCompressorSetup.exe` for most users and `VideoCompresser-Portable.exe` for portable use.
+- Renamed the setup payload to `DO_NOT_DOWNLOAD_THIS__VideoCompressorInstallerPayload.exe` and labeled it “Don't download this; Setup downloads it.”
 
 ## 1.4.0
 

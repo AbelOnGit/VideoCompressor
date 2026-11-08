@@ -18,7 +18,7 @@ import tkinter as tk
 from tkinter import ttk
 
 RELEASE_API = "https://api.github.com/repos/AbelOnGit/VideoCompressor/releases/latest"
-PAYLOAD_NAME = "INTERNAL_DO_NOT_DOWNLOAD__VideoCompressorInstallerPayload.exe"
+PAYLOAD_NAME = "DO_NOT_DOWNLOAD_THIS__VideoCompressorInstallerPayload.exe"
 MAX_PAYLOAD_BYTES = 300 * 1024 * 1024
 RELEASE_URL_PREFIX = "https://github.com/AbelOnGit/VideoCompressor/releases/download/"
 

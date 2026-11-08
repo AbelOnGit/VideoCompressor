@@ -21,7 +21,7 @@ if not exist "%LOCALAPPDATA%\Programs\Inno Setup 7\ISCC.exe" (
   echo Install it from https://jrsoftware.org/isdl.php
   exit /b 1
 )
-"%LOCALAPPDATA%\Programs\Inno Setup 7\ISCC.exe" /DMyAppVersion=%APP_VERSION% /DSetupFileName=INTERNAL_DO_NOT_DOWNLOAD__VideoCompressorInstallerPayload VideoCompressor.iss
+"%LOCALAPPDATA%\Programs\Inno Setup 7\ISCC.exe" /DMyAppVersion=%APP_VERSION% /DSetupFileName=DO_NOT_DOWNLOAD_THIS__VideoCompressorInstallerPayload VideoCompressor.iss
 if errorlevel 1 exit /b 1
 python -m PyInstaller --noconfirm --clean --onefile --noconsole --windowed --name VideoCompressorSetup --icon "%CD%\VideoCompressor.ico" --distpath .. --workpath "build\online_installer" --specpath "build\online_installer_spec" online_installer.py
 if errorlevel 1 exit /b 1

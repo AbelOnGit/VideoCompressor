@@ -4,9 +4,15 @@ Pick a video, pick a size, get a video that fits. Video Compressor is a Windows 
 
 FFmpeg is bundled in the app, so no extra download is needed after setup.
 
-# **DOWNLOAD VideoCompressorSetup.exe, NO OTHER FILE**
+## Install Video Compressor
 
-For normal installation, download **only** [`VideoCompressorSetup.exe`](../../releases/latest). The portable executable is for users who specifically want to run the app without installing it.
+1. Open the [Video Compressor Releases page](../../releases/latest).
+2. Download `VideoCompressorSetup.exe`.
+3. Open the downloaded file. If Windows SmartScreen appears, select **More info**, then **Run anyway**.
+4. Follow the setup steps. The installer downloads the required app files from GitHub and installs Video Compressor for your Windows account. No administrator access is needed.
+5. Open **Video Compressor** from the Start menu. You can optionally select the desktop shortcut during setup.
+
+The setup file is a small online installer and needs an internet connection while it downloads the full app.
 
 ## Features
 
@@ -78,9 +84,10 @@ The script will:
 1. Install the Python dependencies from `requirements.txt`.
 2. Download the Gyan.dev FFmpeg essentials build if `Source\bin` doesn't have the binaries yet.
 3. Package the application and FFmpeg binaries into `VideoCompressor.exe`.
-4. Build `VideoCompressorSetup.exe` with Inno Setup.
+4. Build the internal `DO_NOT_DOWNLOAD_THIS__VideoCompressorInstallerPayload.exe` installer with Inno Setup.
+5. Build the small `VideoCompressorSetup.exe` online installer with PyInstaller.
 
-The build creates the portable executable, `VideoCompressorSetup.exe`, and a full installer payload whose name begins `INTERNAL_DO_NOT_DOWNLOAD__`. Publish the payload with the other assets so Setup can fetch it, but users should download only `VideoCompressorSetup.exe` or the portable executable.
+The build creates the portable executable, `VideoCompressorSetup.exe`, and a full installer payload named `DO_NOT_DOWNLOAD_THIS__VideoCompressorInstallerPayload.exe`. Publish the payload with the other assets so Setup can fetch it. The payload is labeled “Don't download this; Setup downloads it.”
 
 To run it straight from source without building:
 
