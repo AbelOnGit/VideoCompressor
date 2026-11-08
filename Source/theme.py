@@ -1,4 +1,4 @@
-"""Central design tokens for the local v2 beta interface."""
+"""Central design tokens for the Video Compressor V2 interface."""
 
 APP_BG = "#101319"
 PANEL_BG = "#151a22"

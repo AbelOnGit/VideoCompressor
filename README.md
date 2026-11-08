@@ -28,8 +28,7 @@ The setup file is a small online installer and needs an internet connection whil
 - **Already small enough?** If your video is already under the target, the app asks whether to just copy it or re-encode anyway.
 - **Remembers your target size** between launches.
 - **Choose where files go.** Pick an output folder; compressed videos and their run logs are saved there. Your choice is remembered.
-- **Automatic updates.** Installed copies check GitHub for stable releases, verify installer size and SHA-256, show download/install progress, and let you restart now or later.
-- **Update controls.** Review the current and new versions, see download progress, and choose when to restart after installation.
+- **Updates.** The About page links to GitHub Releases, where you can download the latest setup.
 - **One setup download.** `VideoCompressorSetup.exe` downloads and verifies the complete installer for you.
 
 ## Download
@@ -39,7 +38,7 @@ The setup file is a small online installer and needs an internet connection whil
 
 The installer is per-user, so it doesn't need admin rights. It adds a Start Menu shortcut, and you can optionally add a desktop shortcut during setup.
 
-After installing, the app checks for newer stable releases when it starts and installs verified updates automatically. FFmpeg is included, so the app does not need to fetch tools on first launch. The portable executable can also be run directly without installation.
+After installing, visit GitHub Releases when you want to update. FFmpeg is included, so the app does not need to fetch tools on first launch. The portable executable can also be run directly without installation.
 
 > The installer isn't code-signed yet, so Windows SmartScreen may warn you. Click **More info**, then **Run anyway**.
 
@@ -87,7 +86,7 @@ The script will:
 4. Build the internal `DO_NOT_DOWNLOAD_THIS__VideoCompressorInstallerPayload.exe` installer with Inno Setup.
 5. Build the small `VideoCompressorSetup.exe` online installer with PyInstaller.
 
-The build creates the portable executable, `VideoCompressorSetup.exe`, and a full installer payload named `DO_NOT_DOWNLOAD_THIS__VideoCompressorInstallerPayload.exe`. Publish the payload with the other assets so Setup can fetch it. The payload is labeled “Don't download this; Setup downloads it.”
+The build creates the portable executable, `VideoCompressorSetup.exe`, and a full installer payload named `DO_NOT_DOWNLOAD_THIS__VideoCompressorInstallerPayload.exe`. Publish the payload with the other assets so Setup can fetch it. The payload is labeled “DON'T DOWNLOAD THIS - Setup downloads it.”
 
 To run it straight from source without building:
 
@@ -126,6 +125,6 @@ VideoCompressor/
 ## Notes
 
 - Windows only for now.
-- Automatic updates require an internet connection and use the SHA-256 digest published with each GitHub release.
+- The online setup requires an internet connection and verifies the installer payload against the SHA-256 digest published with each GitHub release.
 - Hitting a size target is a bitrate estimate, so the result usually lands a little under what you asked for, not exactly on it.
 - Very tight targets on long videos will look rough. That's physics, not a bug.

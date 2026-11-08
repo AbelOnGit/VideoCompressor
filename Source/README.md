@@ -1,21 +1,19 @@
-# Video Compressor 2.0.0-beta.1
+# Video Compressor 2.0.0
 
-This is the local V2 beta UI redesign. It is intentionally built as a separate application and installer. The beta uses the same compression engine as the stable app, with a separate preferences directory and no automatic update checks.
+Video Compressor V2 is the stable release of the redesigned interface. It keeps the existing FFmpeg compression engine and adds a navigation rail with Compress, Settings, and About pages. Settings support search and include output folder and supported format options.
 
-## Build the beta
+The V2 installer uses the stable per-user install identity and folder, replacing the installed V1 app while preserving its `Outputs` folder. Existing stable settings remain available. If stable settings do not exist, V2 imports the preferences from an installed V2 beta.
 
-Requirements: Python 3.11 or newer, Inno Setup 7, and an internet connection for Python packages. Keep `bin\ffmpeg.exe` and `bin\ffprobe.exe` in place, then run `build_beta.bat` from this folder.
+## Build
 
-The script creates `build\beta\VideoCompressorBeta.exe` and `..\VideoCompressorBetaSetup.exe`. It does not build the online installer or stable installer payload. The beta installer has a distinct AppId, installs under `%LOCALAPPDATA%\Programs\VideoCompressor-Beta`, creates a `Video Compressor Beta` Start Menu entry, and saves settings under `%APPDATA%\VideoCompressor-Beta`.
+Requirements: Python 3.11 or newer, Inno Setup 7, and an internet connection. Keep `bin\ffmpeg.exe` and `bin\ffprobe.exe` in place, then run `build.bat`.
 
-On first launch, the beta may read `%APPDATA%\VideoCompressor\settings.json` once to import the stable target and output folder preferences. It writes beta preferences only to the beta directory. Beta outputs and logs use the beta installation's own `Outputs` folder unless a custom output folder is selected.
+The build creates `..\VideoCompressor.exe`, the small `..\VideoCompressorSetup.exe` online installer, and `..\DO_NOT_DOWNLOAD_THIS__VideoCompressorInstallerPayload.exe`. Setup downloads and verifies the payload from the stable GitHub release. Users should download only `VideoCompressorSetup.exe` (or the portable executable for portable use); the payload is labeled **DON'T DOWNLOAD THIS - Setup downloads it**.
 
-The visible version is `2.0.0-beta.1`. Automatic update checks and updater dialogs are disabled in this build. No release, tag, upload, or publishing step is part of `build_beta.bat`.
+The portable app and full installer payload bundle FFmpeg. Future V2 updates are listed on GitHub Releases and can be installed with Setup.
 
 ## Use
 
-Choose a target size and select or drop a supported video (`MP4`, `MOV`, `MKV`, `AVI`, `WEBM`, `FLV`, `WMV`, `M4V`, or `TS`). The app probes the video's name, size, duration and resolution before compression. Compression and probing continue to use the existing FFmpeg-based engine. Progress displays percent, estimated time remaining, and the current pass/attempt. Each run writes its log beside the output.
-
-The stable app remains available from the repository's existing stable artifacts and `build.bat`. Do not use `build.bat` for this beta workflow; use `build_beta.bat`.
+Choose a target size and select or drop a supported video (`MP4`, `MOV`, `MKV`, `AVI`, `WEBM`, `FLV`, `WMV`, `M4V`, or `TS`). The app probes the video's name, size, duration, and resolution before compression. Progress displays percent, estimated time remaining, and the current pass or attempt. Each run writes a log beside the output.
 
 `VideoCompressor.svg` is the editable vector logo; `VideoCompressor.ico` is used for the app and installer icons. FFmpeg comes from the Gyan.dev Windows essentials build.

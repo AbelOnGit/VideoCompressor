@@ -1,4 +1,4 @@
-"""Small reusable CustomTkinter components for the v2 beta UI."""
+"""Small reusable CustomTkinter components for the V2 UI."""
 import customtkinter as ctk
 
 import theme

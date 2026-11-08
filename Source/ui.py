@@ -30,7 +30,7 @@ def resource_path(name):
 
 
 class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
-    """V2 beta application shell; UI callbacks stay on Tk's thread."""
+    """V2 application shell; UI callbacks stay on Tk's thread."""
 
     TARGETS = TARGETS
 
@@ -39,7 +39,7 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
         self.TkdndVersion = TkinterDnD._require(self)
         ctk.set_appearance_mode("dark")
         self.configure(fg_color=theme.APP_BG)
-        self.title("Video Compressor Beta")
+        self.title("Video Compressor")
         self.geometry(f"{theme.WINDOW['width']}x{theme.WINDOW['height']}")
         self.minsize(theme.WINDOW["min_width"], theme.WINDOW["min_height"])
         try:
@@ -47,9 +47,9 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
         except Exception:
             pass
 
-        self.beta_appdata = Path(os.environ.get("APPDATA", Path.home())) / "VideoCompressor-Beta"
-        self.prefs_path = self.beta_appdata / "settings.json"
-        self.stable_prefs_path = Path(os.environ.get("APPDATA", Path.home())) / "VideoCompressor" / "settings.json"
+        self.appdata = Path(os.environ.get("APPDATA", Path.home())) / "VideoCompressor"
+        self.prefs_path = self.appdata / "settings.json"
+        self.legacy_beta_prefs_path = Path(os.environ.get("APPDATA", Path.home())) / "VideoCompressor-Beta" / "settings.json"
         self.path = None
         self.meta = None
         self.job = None
@@ -82,14 +82,14 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
         self.target_changed(self.target.get(), save=False)
         self.settings_page = self.pages["settings"]
         self.settings_page.reset_button.configure(state="normal" if self.custom_output_dir else "disabled")
-        if self.should_import_stable:
+        if self.should_import_beta:
             self.save_preferences()
         self.protocol("WM_DELETE_WINDOW", self._close)
 
     def _load_preferences(self):
         saved = {}
-        self.should_import_stable = not self.prefs_path.exists()
-        source = self.prefs_path if self.prefs_path.exists() else (self.stable_prefs_path if self.should_import_stable else None)
+        self.should_import_beta = not self.prefs_path.exists() and self.legacy_beta_prefs_path.is_file()
+        source = self.prefs_path if self.prefs_path.exists() else (self.legacy_beta_prefs_path if self.should_import_beta else None)
         if source is not None:
             try:
                 saved = json.loads(source.read_text(encoding="utf-8"))
@@ -116,7 +116,7 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
                      font=theme.font("heading", "bold")).grid(row=0, column=1, sticky="sw", pady=(13, 0))
         ctk.CTkLabel(header, text="Smaller files. Same story.", anchor="w", text_color=theme.MUTED,
                      font=theme.font("small")).grid(row=1, column=1, sticky="nw", pady=(1, 11))
-        badge = ctk.CTkLabel(header, text="BETA", width=48, height=24, corner_radius=theme.RADIUS["sm"],
+        badge = ctk.CTkLabel(header, text="V2", width=48, height=24, corner_radius=theme.RADIUS["sm"],
                              fg_color=theme.ACCENT_SOFT, text_color=theme.ACCENT,
                              font=theme.font("caption", "bold"))
         badge.grid(row=0, column=2, rowspan=2, padx=theme.SPACE["md"])
@@ -139,7 +139,7 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
             button = IconButton(rail, icon, label, lambda page=key: self.show_page(page))
             button.grid(row=index, column=0, sticky="ew", padx=theme.SPACE["sm"], pady=theme.SPACE["xs"])
             self.nav_buttons[key] = button
-        ctk.CTkLabel(rail, text="LOCAL BETA", text_color=theme.FAINT,
+        ctk.CTkLabel(rail, text="VIDEO COMPRESSOR 2", text_color=theme.FAINT,
                      font=theme.font("caption")).grid(row=8, column=0, padx=theme.SPACE["sm"],
                                                        pady=(theme.SPACE["xl"], theme.SPACE["md"]), sticky="s")
 
@@ -161,7 +161,7 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
 
     def save_preferences(self):
         try:
-            self.beta_appdata.mkdir(parents=True, exist_ok=True)
+            self.appdata.mkdir(parents=True, exist_ok=True)
             self.prefs_path.write_text(json.dumps({
                 "target": self.target.get(),
                 "custom_target_mb": self.custom_target.get(),
@@ -296,7 +296,7 @@ class VideoCompressorApp(ctk.CTk, TkinterDnD.DnDWrapper):
 
     def _close(self):
         if self.is_compressing:
-            if not messagebox.askyesno("Compression running", "Cancel compression and close the beta?"):
+            if not messagebox.askyesno("Compression running", "Cancel compression and close Video Compressor?"):
                 return
             self.cancel()
         self.destroy()

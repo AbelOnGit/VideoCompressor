@@ -1,1 +1,1 @@
-"""Page modules for Video Compressor v2 beta."""
+"""Page modules for Video Compressor V2."""

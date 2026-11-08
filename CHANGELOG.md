@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.0
+
+- Released the V2 interface as the stable version, with a dark layout, blue accent, navigation rail, and separate Compress, Settings, and About pages.
+- Added searchable Settings for output folder and supported formats. Existing stable preferences are carried forward, and beta preferences are imported when no stable settings exist.
+- Replaced the beta installer with the stable per-user installer, updating the installed V1 app while preserving its output files. V2 beta installs remain separate.
+- The About page links to GitHub Releases for manual updates.
+
 ## 1.4.1
 
 - Added the small online setup that downloads and verifies the full installer payload from GitHub.
