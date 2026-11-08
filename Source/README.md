@@ -1,23 +1,21 @@
-# Video Compressor 1.4.1
+# Video Compressor 2.0.0-beta.1
 
-A Windows desktop app that targets an output size using two-pass H.264 encoding. Target sizes use decimal megabytes (1 MB = 1,000,000 bytes). Choose a custom output folder and the app remembers it between launches. Installed copies check GitHub for stable updates on startup and show an in-app download, verification, and install flow with restart choices. The portable app bundles FFmpeg. The small online setup downloads and verifies the full per-user installer from GitHub.
+This is the local V2 beta UI redesign. It is intentionally built as a separate application and installer. The beta uses the same compression engine as the stable app, with a separate preferences directory and no automatic update checks.
 
-## Build
+## Build the beta
 
-Requirements: Python 3.11 or newer, Inno Setup 7, and an internet connection for Python packages.
+Requirements: Python 3.11 or newer, Inno Setup 7, and an internet connection for Python packages. Keep `bin\ffmpeg.exe` and `bin\ffprobe.exe` in place, then run `build_beta.bat` from this folder.
 
-1. Keep `bin\ffmpeg.exe` and `bin\ffprobe.exe` in place.
-2. Run `build.bat` from this folder.
-3. The build creates `..\VideoCompressor.exe`, the internal `..\DO_NOT_DOWNLOAD_THIS__VideoCompressorInstallerPayload.exe`, and the small `..\VideoCompressorSetup.exe` online installer.
+The script creates `build\beta\VideoCompressorBeta.exe` and `..\VideoCompressorBetaSetup.exe`. It does not build the online installer or stable installer payload. The beta installer has a distinct AppId, installs under `%LOCALAPPDATA%\Programs\VideoCompressor-Beta`, creates a `Video Compressor Beta` Start Menu entry, and saves settings under `%APPDATA%\VideoCompressor-Beta`.
 
-The portable app and full installer payload use PyInstaller one-file, windowed mode and bundle FFmpeg. The small online installer downloads the payload from the latest stable GitHub release, verifies its size and SHA-256 digest, then starts the per-user installer.
+On first launch, the beta may read `%APPDATA%\VideoCompressor\settings.json` once to import the stable target and output folder preferences. It writes beta preferences only to the beta directory. Beta outputs and logs use the beta installation's own `Outputs` folder unless a custom output folder is selected.
 
-The installer is per-user: it creates a Start Menu shortcut for Windows Search and an entry in Installed Apps. It does not require administrator rights. A desktop shortcut can be selected in the installer. Outputs remain in the installed app's `Outputs` folder and are preserved if the app is uninstalled.
-
-`VideoCompressor.svg` is the editable vector logo; `VideoCompressor.ico` is used for the app, window, and installer icons.
+The visible version is `2.0.0-beta.1`. Automatic update checks and updater dialogs are disabled in this build. No release, tag, upload, or publishing step is part of `build_beta.bat`.
 
 ## Use
 
-Open the app, select or drop a video, choose a target size, and click **Compress**. Output is saved in the `Outputs` folder as `<name>_compressed.mp4`; existing files are preserved and a number is added to avoid overwriting. Timestamped `.log` files for each run are saved in the same folder. Preferences are saved under `%APPDATA%\VideoCompressor`.
+Choose a target size and select or drop a supported video (`MP4`, `MOV`, `MKV`, `AVI`, `WEBM`, `FLV`, `WMV`, `M4V`, or `TS`). The app probes the video's name, size, duration and resolution before compression. Compression and probing continue to use the existing FFmpeg-based engine. Progress displays percent, estimated time remaining, and the current pass/attempt. Each run writes its log beside the output.
 
-The bundled FFmpeg tools come from the Gyan.dev Windows essentials build.
+The stable app remains available from the repository's existing stable artifacts and `build.bat`. Do not use `build.bat` for this beta workflow; use `build_beta.bat`.
+
+`VideoCompressor.svg` is the editable vector logo; `VideoCompressor.ico` is used for the app and installer icons. FFmpeg comes from the Gyan.dev Windows essentials build.

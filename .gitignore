@@ -1,6 +1,7 @@
 # Build outputs and per-user video data
 /VideoCompressor.exe
 /VideoCompressorSetup.exe
+/VideoCompressorBetaSetup.exe
 /VideoCompressorInstallerPayload.exe
 /VideoCompressorTools.zip
 /INTERNAL_DO_NOT_DOWNLOAD__VideoCompressorInstallerPayload.exe
@@ -14,3 +15,4 @@
 /Source/__pycache__/
 /Source/*.spec
 *.log
+/Source/**/__pycache__/

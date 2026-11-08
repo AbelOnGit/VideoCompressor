@@ -270,7 +270,7 @@ class CompressionJob:
             else:
                 audio_step = f" plus {audio_kbps} kbps AAC audio" if meta["has_audio"] else "; no audio stream"
                 self.steps.append(f"Attempt {attempt + 1}, Pass 2/2: encoded the MP4 at {video_kbps:.0f} kbps video{audio_step} with H.264 (libx264).")
-            self.on_status(f"{label} · attempt {attempt + 1}")
+            self.on_status(f"Pass {pass_no} of 2, attempt {attempt + 1} of 4")
             args = common + ["-pass", str(pass_no), "-passlogfile", passlog, "-progress", "pipe:1", "-nostats"]
             if pass_no == 1: args += ["-an", "-f", "null", "NUL"]
             else: args += ["-movflags", "+faststart", output]
