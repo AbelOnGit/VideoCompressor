@@ -112,10 +112,8 @@ def write_run_log(source: str, target_mb: float, result: dict | None,
 
 
 def binary_path(name: str) -> str:
-    if getattr(sys, "frozen", False):
-        root = Path(os.environ.get("LOCALAPPDATA", Path.home())) / "VideoCompressor" / "tools"
-        return str(root / name)
-    return str(Path(__file__).resolve().parent / "bin" / name)
+    root = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
+    return str(root / "bin" / name)
 
 
 def _ratio(value: str | None) -> float:

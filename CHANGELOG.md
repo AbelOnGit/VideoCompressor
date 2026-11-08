@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.0
+
+- The portable app and installer now include FFmpeg, so they work without downloading extra release assets or tools on first launch.
+- GitHub releases now need only `VideoCompressorSetup.exe` for most users and `VideoCompresser-Portable.exe` for portable use.
+
 ## 1.4.0
 
 - Replaced the roughly 100 MB setup download with a small online bootstrapper that downloads and SHA-256 verifies the full installer payload from GitHub.

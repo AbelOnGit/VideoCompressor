@@ -2,7 +2,11 @@
 
 Pick a video, pick a size, get a video that fits. Video Compressor is a Windows desktop app that squeezes a video down to a target file size (like 20 MB for Discord) using two-pass H.264 encoding.
 
-FFmpeg is downloaded from the project’s GitHub release the first time the app opens, then cached on the PC for future launches.
+FFmpeg is bundled in the app, so no extra download is needed after setup.
+
+# **DOWNLOAD VideoCompressorSetup.exe, NO OTHER FILE**
+
+For normal installation, download **only** [`VideoCompressorSetup.exe`](../../releases/latest). The portable executable is for users who specifically want to run the app without installing it.
 
 ## Features
 
@@ -20,16 +24,16 @@ FFmpeg is downloaded from the project’s GitHub release the first time the app 
 - **Choose where files go.** Pick an output folder; compressed videos and their run logs are saved there. Your choice is remembered.
 - **Automatic updates.** Installed copies check GitHub for stable releases, verify installer size and SHA-256, show download/install progress, and let you restart now or later.
 - **Update controls.** Review the current and new versions, see download progress, and choose when to restart after installation.
-- **Small online setup.** `VideoCompressorSetup.exe` downloads and verifies the full installer from GitHub. The app separately downloads and verifies its FFmpeg tools on first launch.
+- **One setup download.** `VideoCompressorSetup.exe` includes everything needed to install and run the app.
 
 ## Download
 
 1. Go to the [Releases](../../releases) page.
-2. Download the small `VideoCompressorSetup.exe` online installer and run it. It downloads the full installer from GitHub.
+2. Download `VideoCompressorSetup.exe` and run it.
 
 The installer is per-user, so it doesn't need admin rights. It adds a Start Menu shortcut, and you can optionally add a desktop shortcut during setup.
 
-After installing, the app checks for newer stable releases when it starts and installs verified updates automatically. On first launch, it downloads the FFmpeg tools archive from GitHub and stores it under `%LOCALAPPDATA%\VideoCompressor\tools` for later runs. The portable executable can also download and cache those tools.
+After installing, the app checks for newer stable releases when it starts and installs verified updates automatically. FFmpeg is included, so the app does not need to fetch tools on first launch. The portable executable can also be run directly without installation.
 
 > The installer isn't code-signed yet, so Windows SmartScreen may warn you. Click **More info**, then **Run anyway**.
 
@@ -73,12 +77,10 @@ The script will:
 
 1. Install the Python dependencies from `requirements.txt`.
 2. Download the Gyan.dev FFmpeg essentials build if `Source\bin` doesn't have the binaries yet.
-3. Package the application without embedding FFmpeg into `VideoCompressor.exe`.
-4. Build `VideoCompressorTools.zip` as a separately downloadable FFmpeg bundle.
-5. Build `VideoCompressorInstallerPayload.exe` with Inno Setup.
-6. Build the small `VideoCompressorSetup.exe` online bootstrapper.
+3. Package the application and FFmpeg binaries into `VideoCompressor.exe`.
+4. Build `VideoCompressorSetup.exe` with Inno Setup.
 
-All four release artifacts end up in the repository root. Upload the setup bootstrapper, installer payload, tools archive, and portable executable to the same GitHub release.
+Both release artifacts end up in the repository root. Upload `VideoCompressorSetup.exe` and the portable executable to the GitHub release.
 
 To run it straight from source without building:
 
@@ -111,7 +113,7 @@ VideoCompressor/
 - [Python](https://www.python.org/)
 - [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) for the UI
 - [tkinterdnd2](https://github.com/Eliav2/tkinterdnd2) for drag and drop
-- [FFmpeg](https://ffmpeg.org/) (Gyan.dev Windows essentials build) for encoding; installed apps fetch it from the project release on first use
+- [FFmpeg](https://ffmpeg.org/) (Gyan.dev Windows essentials build) for encoding
 - [PyInstaller](https://pyinstaller.org/) and [Inno Setup](https://jrsoftware.org/isinfo.php) for packaging
 
 ## Notes

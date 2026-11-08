@@ -14,17 +14,13 @@ if not defined APP_VERSION (
   echo Could not read APP_VERSION from version.py.
   exit /b 1
 )
-python -m PyInstaller --noconfirm --clean --onefile --noconsole --windowed --name VideoCompressor --icon "VideoCompressor.ico" --distpath .. --collect-all customtkinter --collect-all tkinterdnd2 --add-data "VideoCompressor.ico;." main.py
-if errorlevel 1 exit /b 1
-python package_tools.py
+python -m PyInstaller --noconfirm --clean --onefile --noconsole --windowed --name VideoCompressor --icon "VideoCompressor.ico" --distpath .. --collect-all customtkinter --collect-all tkinterdnd2 --add-data "VideoCompressor.ico;." --add-binary "bin\ffmpeg.exe;bin" --add-binary "bin\ffprobe.exe;bin" main.py
 if errorlevel 1 exit /b 1
 if not exist "%LOCALAPPDATA%\Programs\Inno Setup 7\ISCC.exe" (
   echo Inno Setup 7 is required to build the installer.
   echo Install it from https://jrsoftware.org/isdl.php
   exit /b 1
 )
-"%LOCALAPPDATA%\Programs\Inno Setup 7\ISCC.exe" /DMyAppVersion=%APP_VERSION% /DSetupFileName=VideoCompressorInstallerPayload VideoCompressor.iss
+"%LOCALAPPDATA%\Programs\Inno Setup 7\ISCC.exe" /DMyAppVersion=%APP_VERSION% VideoCompressor.iss
 if errorlevel 1 exit /b 1
-python -m PyInstaller --noconfirm --clean --onefile --noconsole --windowed --name VideoCompressorSetup --icon "VideoCompressor.ico" --distpath .. --workpath "build\online_installer" --specpath "build\online_installer_spec" online_installer.py
-if errorlevel 1 exit /b 1
-echo Built ..\VideoCompressor.exe, ..\VideoCompressorSetup.exe, ..\VideoCompressorInstallerPayload.exe, and ..\VideoCompressorTools.zip
+echo Built ..\VideoCompressor.exe and ..\VideoCompressorSetup.exe
