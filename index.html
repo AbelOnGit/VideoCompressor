@@ -45,10 +45,11 @@
     padding-block: 28px 48px;
     font-variant-numeric: tabular-nums;
   }
-  .wrap { max-width: 640px; margin: 0 auto; display: grid; gap: 18px; }
-  h1 { font-family: var(--font-display); font-size: 30px; line-height: 1.1; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+  .wrap { max-width: 720px; margin: 0 auto; display: grid; gap: 18px; }
+  h1 { font-family: var(--font-display); font-size: clamp(30px, 5vw, 38px); line-height: 1.1; margin: 0; letter-spacing: -0.035em; text-wrap: balance; }
   .sub { color: var(--muted); margin: 6px 0 0; max-width: 56ch; }
-  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: grid; gap: 14px; min-width: 0; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: clamp(16px, 3vw, 22px); display: grid; gap: 14px; min-width: 0; box-shadow: 0 4px 16px rgba(17, 23, 29, .035); }
+  .eyebrow { margin: 0 0 8px; color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
   .label { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
   .drop { display: grid; gap: 4px; place-items: center; text-align: center; padding: 28px 16px; border: 1.5px dashed var(--line); border-radius: 10px; cursor: pointer; background: var(--bg); transition: border-color .15s, background .15s; }
   .drop:hover, .drop.over, .drop:focus-within { border-color: var(--accent); background: var(--accent-soft); }
@@ -77,11 +78,14 @@
   .note { font-size: 13px; padding: 10px 12px; border-radius: 8px; background: var(--accent-soft); margin: 0; }
   .note.warn { color: var(--warn); background: transparent; border: 1px solid var(--warn); }
   .note.err { color: var(--bad); background: transparent; border: 1px solid var(--bad); }
+  .note[role="alert"] { font-weight: 500; }
   .row { display: flex; gap: 10px; flex-wrap: wrap; }
-  .btn { font: inherit; font-weight: 600; padding: 12px 20px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; }
+  .btn { font: inherit; font-weight: 600; padding: 12px 20px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; transition: transform .12s, box-shadow .12s, border-color .12s; }
+  .btn:not(:disabled):hover { border-color: var(--accent); box-shadow: 0 3px 10px rgba(17, 23, 29, .08); transform: translateY(-1px); }
   .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
   .btn:disabled { opacity: .45; cursor: not-allowed; }
   .progress-top { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 14px; }
+  .progress-top span:first-child { font-weight: 600; }
   .progress-top span:last-child { color: var(--muted); }
   video { width: 100%; max-height: 360px; background: #000; border-radius: 8px; }
   details summary { cursor: pointer; font-weight: 600; }
@@ -103,6 +107,8 @@
   .vs .con h2 { color: var(--warn); }
   .vs-foot { margin: 0; font-size: 13px; color: var(--muted); }
   .foot { font-size: 12px; color: var(--muted); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  @media (max-width: 520px) { body { padding-block: 20px 32px; } .row .btn { flex: 1 1 auto; } .custom input[type=number] { width: 96px; } }
   #probe { display: block; width: 100%; max-width: 220px; max-height: 170px; object-fit: contain; background: #000; border-radius: 8px; }
   @media (prefers-reduced-motion: reduce) { .bar > i, .drop, .chip span, .vs-btn, .vs-chev { transition: none; } .vs-btn:hover { transform: none; } }
 </style>
@@ -111,11 +117,12 @@
 <body>
 <main class="wrap">
   <header>
+    <p class="eyebrow">Private, in-browser video compression</p>
     <h1>Video Compressor</h1>
     <p class="sub">Squeeze a video under a size limit. It all happens in this browser tab, so your video never gets uploaded.</p>
   </header>
 
-  <p class="note warn"><b>Much, much slower than the desktop app.</b> The browser has to read the video one frame at a time, so a 1 minute video can take several minutes. For long or large videos, use the <a href="https://github.com/AbelOnGit/VideoCompressor/releases/latest" target="_blank" rel="noopener">Windows desktop app</a> instead.</p>
+  <p class="note warn"><b>Much, much slower than the desktop app.</b> The browser has to read the video one frame at a time, so a 1 minute video can take several minutes. Keep this tab open and in front. For long or large videos, use the <a href="https://github.com/AbelOnGit/VideoCompressor/releases/latest" target="_blank" rel="noopener">Windows desktop app</a> instead.</p>
 
   <button class="btn vs-btn" id="vs-toggle" type="button" aria-expanded="false" aria-controls="vs-panel"><span class="vs-ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 7h14M5 7l-3 7a3.5 3.5 0 0 0 6 0L5 7zm14 0l-3 7a3.5 3.5 0 0 0 6 0l-3-7z"/></svg></span>
     <span class="vs-txt"><b>Web version vs desktop app</b><small>See the pros and cons before you start</small></span>
@@ -148,14 +155,14 @@
     <p class="vs-foot">Short clip, any device: use this page. Long or large video, or you need the best quality at a tight size: use the <a href="https://github.com/AbelOnGit/VideoCompressor/releases/latest" target="_blank" rel="noopener">Windows desktop app</a>.</p>
   </section>
 
-  <p class="note err" id="unsupported" hidden>This browser can't encode video (it needs WebCodecs). Try a recent Chrome, Edge or Safari.</p>
+  <p class="note err" id="unsupported" role="alert" hidden>This browser can't encode video (it needs WebCodecs). Try a recent version of Chrome, Edge, Firefox, or Safari.</p>
 
   <section class="card" aria-labelledby="l-file">
     <div class="label" id="l-file">1. Video</div>
     <label class="drop" id="drop">
       <strong id="drop-title">Choose a video</strong>
       <span id="drop-sub">or drop one here. MP4, MOV and WebM work best.</span>
-      <input type="file" id="file" accept="video/*,.mkv,.avi,.flv,.wmv,.m4v,.ts">
+      <input type="file" id="file" accept="video/*,.mkv,.avi,.flv,.wmv,.m4v,.ts" aria-label="Choose a video file">
     </label>
     <dl class="facts" id="facts" hidden>
       <div><dt>Size</dt><dd id="f-size">-</dd></div>
@@ -175,6 +182,7 @@
       <input type="number" id="custom" min="0.5" max="2000" step="0.5" inputmode="decimal" placeholder="MB">
       <span>MB (1 MB = 1,000,000 bytes)</span>
     </div>
+    <p class="note err" id="target-error" role="alert" hidden>Enter a target between 0.5 and 2,000 MB.</p>
     <div class="gauge" id="gauge" hidden>
       <div class="bar" id="gauge-bar" role="img" aria-label="Target size compared with original size"><i id="gauge-fill"></i></div>
       <div class="gauge-row"><span>Target <b id="g-target">-</b></span><span>Original <b id="g-orig">-</b></span></div>
@@ -191,11 +199,11 @@
       <button class="btn" id="stop" hidden>Cancel</button>
     </div>
     <div id="progress" hidden>
-      <div class="progress-top"><span id="p-status">Starting</span><span id="p-eta"></span></div>
-      <div class="bar" style="margin-top:8px"><i id="p-fill"></i></div>
+      <div class="progress-top"><span id="p-status" role="status" aria-live="polite">Starting</span><span id="p-eta"></span></div>
+      <div class="bar" style="margin-top:8px" role="progressbar" aria-label="Compression progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="p-fill"></i></div>
       <p class="plan" style="margin-top:8px">Keep this tab open and in front while it works.</p>
     </div>
-    <p class="note err" id="error" hidden></p>
+    <p class="note err" id="error" role="alert" hidden></p>
   </section>
 
   <section class="card" id="result" hidden aria-labelledby="l-res">
@@ -263,7 +271,7 @@
   function fmtFps(f) { return f ? (Math.round(f * 100) / 100).toString() : '?'; }
   // </plan>
 
-  var state = { file: null, meta: null, audio: null, target: 25, running: false, cancel: false, out: null, logText: '', outName: '' };
+  var state = { file: null, meta: null, audio: null, target: 25, running: false, loading: false, cancel: false, out: null, logText: '', outName: '' };
   var wakeLock = null, audioFailed = false;
 
   // ---- diagnostics
@@ -335,15 +343,25 @@
   try { var saved = parseFloat(localStorage.getItem('vc-target')); if (saved > 0) state.target = saved; } catch (e) {}
   syncChips();
   $('custom').addEventListener('input', function () {
-    var v = parseFloat($('custom').value);
-    if (v > 0) setTarget(v, true);
+    var raw = $('custom').value.trim(), v = Number(raw);
+    var valid = raw === '' ? PRESETS.some(function (mb) { return $('chip' + mb).checked; }) : Number.isFinite(v) && v >= 0.5 && v <= 2000;
+    $('target-error').hidden = valid;
+    if (valid && raw !== '') setTarget(v, true);
+    else refreshPlan();
   });
+  $('custom').addEventListener('blur', function () { if (!$('custom').value.trim()) syncChips(); });
+  function targetIsValid() {
+    var raw = $('custom').value.trim();
+    if (raw !== '') { var v = Number(raw); return Number.isFinite(v) && v >= 0.5 && v <= 2000; }
+    return PRESETS.some(function (mb) { return $('chip' + mb).checked; });
+  }
   function syncChips() {
     var hit = false;
     PRESETS.forEach(function (mb) { var el = $('chip' + mb); el.checked = (mb === state.target); if (mb === state.target) hit = true; });
     if (!hit) $('custom').value = String(state.target);
   }
   function setTarget(mb, fromCustom) {
+    if (!Number.isFinite(mb) || mb < 0.5 || mb > 2000) return;
     state.target = mb;
     if (fromCustom) PRESETS.forEach(function (p) { $('chip' + p).checked = false; });
     try { localStorage.setItem('vc-target', String(mb)); } catch (e) {}
@@ -352,22 +370,28 @@
 
   // ---- file picking
   var drop = $('drop');
-  ['dragenter', 'dragover'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); }); });
+  ['dragenter', 'dragover'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); if (!state.loading && !state.running) drop.classList.add('over'); }); });
   ['dragleave', 'drop'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('over'); }); });
-  drop.addEventListener('drop', function (e) { var f = e.dataTransfer && e.dataTransfer.files[0]; if (f) loadFile(f); });
-  $('file').addEventListener('change', function () { var f = $('file').files[0]; if (f) loadFile(f); });
+  drop.addEventListener('drop', function (e) { if (state.loading || state.running) return; var f = e.dataTransfer && e.dataTransfer.files[0]; if (f) loadFile(f); });
+  $('file').addEventListener('change', function () { var f = this.files[0]; if (f) loadFile(f); this.value = ''; });
 
   function showError(msg) { var el = $('error'); el.textContent = msg; el.hidden = !msg; }
 
   function loadFile(file) {
-    if (state.running) return;
-    showError(''); $('result').hidden = true; $('go').disabled = true;
+    if (state.running || state.loading) return;
+    showError(''); $('result').hidden = true;
+    if ($('preview').dataset.url) { URL.revokeObjectURL($('preview').dataset.url); delete $('preview').dataset.url; }
+    $('preview').removeAttribute('src'); $('preview').load();
+    state.out = null; state.outName = '';
+    $('logcard').hidden = true; $('facts').hidden = true; $('gauge').hidden = true; $('plan').hidden = true; $('small-note').hidden = true;
+    $('go').disabled = true; $('file').disabled = true; state.loading = true;
     state.file = file; state.meta = null; state.audio = null; state.pass = null; $('probe').hidden = false;
     D = []; T0 = performance.now(); audioFailed = false; envDiag();
     diag('FILE name=' + file.name + ', type=' + (file.type || 'unknown') + ', bytes=' + file.size + ', lastModified=' + new Date(file.lastModified).toISOString());
     $('drop-title').textContent = file.name;
     $('drop-sub').textContent = 'Reading the video...';
     analyze(file).then(function (r) {
+      state.loading = false; $('file').disabled = false;
       if (state.file !== file) return;
       state.meta = r.meta; state.audio = r.audio;
       $('drop-sub').textContent = 'Tap to choose a different video';
@@ -378,8 +402,9 @@
       $('f-aud').textContent = r.meta.audioDesc;
       $('facts').hidden = false;
       refreshPlan();
-      $('go').disabled = typeof VideoEncoder === 'undefined';
+      $('go').disabled = typeof VideoEncoder === 'undefined' || !targetIsValid();
     }).catch(function (err) {
+      state.loading = false; $('file').disabled = false;
       if (state.file !== file) return;
       $('drop-sub').textContent = 'Choose a different video';
       $('facts').hidden = true; $('gauge').hidden = true; $('plan').hidden = true; $('probe').hidden = true;
@@ -389,6 +414,12 @@
 
   function refreshPlan() {
     if (!state.meta || !state.file) return;
+    if (!targetIsValid()) {
+      $('gauge').hidden = true; $('plan').hidden = true; $('small-note').hidden = true;
+      $('go').disabled = true;
+      return;
+    }
+    $('target-error').hidden = true;
     var p = makePlan(state.meta, state.target);
     $('gauge').hidden = false;
     $('g-target').textContent = fmtMB(p.targetBytes);
@@ -402,6 +433,7 @@
     bits.push('video ' + Math.round(p.videoKbps) + ' kbps');
     $('plan').textContent = 'Plan: ' + bits.join(', ') + '.';
     $('plan').hidden = false;
+    $('go').disabled = typeof VideoEncoder === 'undefined' || !targetIsValid();
   }
 
   // ---- reading metadata
@@ -706,6 +738,7 @@
   // ---- the job
   function setProgress(frac, status, eta) {
     $('p-fill').style.width = (frac * 100).toFixed(1) + '%';
+    $('p-fill').parentNode.setAttribute('aria-valuenow', String(Math.round(frac * 100)));
     $('p-status').textContent = status;
     $('p-eta').textContent = eta != null ? 'about ' + fmtTime(eta) + ' left' : '';
   }
@@ -728,7 +761,7 @@
   async function run() {
     if (state.running || !state.file || !state.meta) return;
     state.running = true; state.cancel = false; showError(''); $('result').hidden = true; $('logcard').hidden = true;
-    $('go').hidden = true; $('stop').hidden = false; $('progress').hidden = false;
+    $('go').hidden = true; $('stop').hidden = false; $('progress').hidden = false; $('file').disabled = true;
     setProgress(0, 'Getting ready', null);
     try { if (navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
     var info = { started: new Date(), steps: [], target: state.target, status: 'Incomplete', detail: '' };
@@ -755,13 +788,13 @@
       for (var attempt = 0; attempt < 4; attempt++) {
         if (cancelled()) throw new CancelError();
         plan.videoKbps = kbps;
-        steps.push('Attempt ' + (attempt + 1) + ': set video bitrate to ' + Math.round(kbps) + ' kbps; encoder H.264, hardware-assisted, single pass.');
+        steps.push('Attempt ' + (attempt + 1) + ': set video bitrate to ' + Math.round(kbps) + ' kbps; browser H.264 encoder, single pass.');
         var label = 'Attempt ' + (attempt + 1) + ' of 4';
         setProgress(0, label, null);
         var res = await encodeAttempt(plan, meta, audio, url, function (f, eta) { setProgress(f, label + ' - ' + Math.round(f * 100) + '%', eta); });
         var size = res.buffer.byteLength;
         diag('attempt ' + (attempt + 1) + ' result: ' + size + ' bytes (target ' + plan.targetBytes + '), frames fed=' + res.frames + ' of ' + res.expected + ' expected');
-        if (res.frames < res.expected * 0.9) steps.push('Attempt ' + (attempt + 1) + ': about ' + (res.expected - res.frames) + ' frames were skipped while reading the video; turn on frame-perfect mode if motion looks choppy.');
+        if (res.frames < res.expected * 0.9) steps.push('Attempt ' + (attempt + 1) + ': about ' + (res.expected - res.frames) + ' frames were skipped while reading the video; motion may look choppy. Use the desktop app for a more reliable result.');
         if (size <= plan.targetBytes) {
           steps.push('Attempt ' + (attempt + 1) + ': output measured ' + fmtMB(size) + ', within the target.');
           final = res.buffer; break;
@@ -786,7 +819,7 @@
     } finally {
       URL.revokeObjectURL(url);
       if (wakeLock) { try { wakeLock.release(); } catch (e) {} wakeLock = null; }
-      state.running = false; $('go').hidden = false; $('stop').hidden = true; $('progress').hidden = true;
+      state.running = false; $('file').disabled = false; $('go').hidden = false; $('stop').hidden = true; $('progress').hidden = true;
       diag('=== RUN FINISHED, status=' + info.status);
       state.logText = buildLog(info);
       $('log').textContent = state.logText; $('logcard').hidden = false;
@@ -806,21 +839,13 @@
 
   async function save(filename, data, noteId) {
     var note = $(noteId || 'save-note'); note.hidden = true;
-    var dl = null;
-    try { dl = window.claude && window.claude.use ? await window.claude.use('downloads') : null; } catch (e) {}
-    if (!dl) {
-      try {
-        var blob = data instanceof Blob ? data : new Blob([data]);
-        var u = URL.createObjectURL(blob), a = document.createElement('a');
-        a.href = u; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(function () { URL.revokeObjectURL(u); }, 60000);
-      } catch (e) { note.textContent = "Couldn't start the download. Use the video player's menu to save it."; note.hidden = false; }
-      return;
-    }
-    try { await dl.save({ filename: filename, data: data }); }
-    catch (e) {
-      if (e && e.code === 'declined') return;
-      note.textContent = e && e.code === 'host_unavailable' ? 'This app cannot save files. Open the page in a browser to save the video.' : 'The file could not be saved (' + ((e && e.code) || 'unknown error') + ').';
+    try {
+      var blob = data instanceof Blob ? data : new Blob([data]);
+      var u = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = u; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(u); }, 60000);
+    } catch (e) {
+      note.textContent = "Couldn't start the download. Use the video player's menu to save it.";
       note.hidden = false;
     }
   }
