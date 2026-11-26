@@ -14,10 +14,9 @@ A browser version of Video Compressor. Pick a video, pick a size, and it squeeze
 
 ## Running it
 
-WebCodecs only works on secure pages, so opening `index.html` straight from disk may not work. Either:
+The page is `index.html` at the root of this repo, and GitHub Pages serves it at https://abelongit.github.io/VideoCompressor
 
-- turn on GitHub Pages for this repo and open the `web` page, or
-- serve the folder locally, for example `python -m http.server` inside `web/`, then open `http://localhost:8000`.
+WebCodecs only works on secure pages, so opening `index.html` straight from disk may not work. To run it locally, serve the repo folder, for example `python -m http.server`, then open `http://localhost:8000`.
 
 Every run writes a detailed log you can copy or save from the page.
 
